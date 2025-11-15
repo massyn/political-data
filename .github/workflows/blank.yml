@@ -1,0 +1,51 @@
+name: Publish
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check me out
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Generate report
+        run: python build.py
+      
+      - name: Publish to Cloudflare
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: 'political-data'
+          directory: './dist'
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+  
+  # notify-on-success:
+  #   if: success()
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Send Slack Success Notification
+  #       uses: rtCamp/action-slack-notify@v2
+  #       env:
+  #         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         SLACK_MESSAGE: "✅ *Build Succeeded!* 🎯\n*Repo:* ${{ github.repository }}"
+  #         SLACK_COLOR: "#36A64F"
+
+  # notify-on-failure:
+  #   if: failure()
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Send Slack Failure Notification
+  #       uses: rtCamp/action-slack-notify@v2
+  #       env:
+  #         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         SLACK_MESSAGE: "🚨 *Build Failed!* ❌\n*Repo:* ${{ github.repository }}\n*Branch:* ${{ github.ref }}\n*Commit:* ${{ github.sha }}"
+  #         SLACK_COLOR: "#FF0000"
