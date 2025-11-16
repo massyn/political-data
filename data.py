@@ -85,6 +85,7 @@ class Data:
                             'frequency' : indicator.get('frequency','error'),
                             'source' : indicator.get('source','error'),
                             'schema' : indicator.get('schema',{}),
+                            'graph' : indicator.get('graph',False),
                             'data' : self.result(jurisdiction,i,is_latest=True)['data']
                         })
                 else:

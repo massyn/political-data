@@ -11,3 +11,4 @@ graph:
     y: value
     title: Unemployment Rate (%)
     overlay_metric: prime_minister
+    direction: lower_is_better

@@ -33,6 +33,47 @@
         {% endif %}
     </div>
 
+    {% if scorecards %}
+    {% for y_field, scorecard_data in scorecards.items() %}
+    {% if loop.first and scorecard_data %}
+    <div class="content-card mb-4">
+        <h2>Government Performance Scorecard</h2>
+        <p class="text-muted mb-3">Comparing how the last 5 governments performed on {{ y_field|title }}</p>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Government</th>
+                        <th>Party</th>
+                        <th>Start Date</th>
+                        <th>Start Value</th>
+                        <th>End Value</th>
+                        <th>Change</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for gov in scorecard_data %}
+                    <tr>
+                        <td><strong>{{ gov.name }}</strong></td>
+                        <td><span class="badge" style="background-color: {{ gov.colour }};">{{ gov.party }}</span></td>
+                        <td>{{ gov.date }}</td>
+                        <td>{{ "%.2f"|format(gov.start_value) }}</td>
+                        <td>{{ "%.2f"|format(gov.end_value) }}</td>
+                        <td>{{ "%+.2f"|format(gov.change) }} ({{ "%+.1f"|format(gov.change_pct) }}%)</td>
+                        <td class="text-center" style="font-size: 2rem;">
+                            <strong style="color: {% if gov.status == 'Improved' %}#28a745{% elif gov.status == 'Worsened' %}#dc3545{% else %}#ffc107{% endif %};">{{ gov.status_icon }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
     {% if indicator.indicator.graph and indicator.indicator.graph is not sameas false %}
     {% for graph_config in indicator.indicator.graph %}
     <div class="content-card mb-4">
@@ -102,13 +143,18 @@
     const firstDataDate = labels[0];
     const lastDataDate = labels[labels.length - 1];
 
-    // Filter overlay data to only include entries within or overlapping the data range
+    // Filter overlay data to include governments that overlap with or follow the data range
     const overlayData = overlayDataRaw.filter((entry, index) => {
         const entryDate = entry.date;
         const nextDate = index < overlayDataRaw.length - 1 ? overlayDataRaw[index + 1].date : null;
 
-        // Include if the entry starts before data ends and (is the last entry or next entry starts after data begins)
-        return entryDate <= lastDataDate && (!nextDate || nextDate >= firstDataDate);
+        // Include if:
+        // 1. Government period overlaps with data range (starts before data ends AND ends after data starts)
+        // 2. OR it's the current government (no successor) - always show current government
+        const overlapsData = entryDate <= lastDataDate && (!nextDate || nextDate >= firstDataDate);
+        const isCurrentGov = !nextDate;
+
+        return overlapsData || isCurrentGov;
     });
 
     // Create annotations for government changes

@@ -11,3 +11,4 @@ graph:
     y: value
     title: GDP Growth (% quarterly)
     overlay_metric: prime_minister
+    direction: higher_is_better

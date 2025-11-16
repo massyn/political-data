@@ -12,6 +12,7 @@ graph:
     y: value
     title: Annual Wage Growth (%)
     overlay_metric: prime_minister
+    direction: higher_is_better
   - x: date
     y: index
     title: Wage Price Index

@@ -12,6 +12,7 @@ graph:
     y: value
     title: Percentage change
     overlay_metric: prime_minister
+    direction: lower_is_better
   - x: date
     y: index
     title: CPI Index value
