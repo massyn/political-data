@@ -1,0 +1,13 @@
+title: Median House Price
+category: Housing
+frequency: Quarter
+source: https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/residential-property-price-indexes-eight-capital-cities
+description: This indicator tracks the median dwelling price across Australia's capital cities, providing a measure of housing affordability and market conditions. Housing affordability is a critical political issue affecting homeownership rates and cost of living. The 'value' field represents the median price in Australian dollars for established house transfers across the eight capital cities.
+schema:
+  date: The last day of the quarter
+  value: Median dwelling price (AUD)
+graph:
+  - x: date
+    y: value
+    title: Median House Price (AUD)
+    overlay_metric: prime_minister

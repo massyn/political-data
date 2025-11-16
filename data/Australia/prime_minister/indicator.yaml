@@ -1,0 +1,11 @@
+title: Prime Minister of Australia
+category: Government
+frequency: 3 Year
+source: https://results.aec.gov.au/
+description: This indicator tracks who the Prime Minister of Australia is following each federal election. It is recorded at every election, even when the incumbent wins re-election, allowing tracking of government continuity and change over time.
+schema:
+  date: The date the prime minister won the last election
+  value: The full name of the Prime Minister
+  party: The name of the party
+  colour: The RGB colour used to indicate the party
+graph: False

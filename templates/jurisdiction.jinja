@@ -1,0 +1,63 @@
+{% extends "base.jinja" %}
+
+{% block title %}{{ page_title }} - Political Data Dashboard{% endblock %}
+
+{% block content %}
+<div class="my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ jurisdiction }}</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">{{ jurisdiction }}</h1>
+
+    {% set categories = {} %}
+    {% for i in indicators %}
+        {% if i['category'] not in categories %}
+            {% set _ = categories.update({i['category']: []}) %}
+        {% endif %}
+        {% set _ = categories[i['category']].append(i) %}
+    {% endfor %}
+
+    <div class="content-card">
+        <h2 class="mb-4">Indicators</h2>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Indicator</th>
+                        <th>Latest Date</th>
+                        <th>Latest Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category, category_indicators in categories.items()|sort %}
+                    {% for i in category_indicators|sort(attribute='title') %}
+                    <tr onclick="window.location='{{ jurisdiction.lower() }}_{{ i['id'].lower() }}.html';" style="cursor: pointer;">
+                        <td>{% if loop.first %}<strong>{{ category }}</strong>{% endif %}</td>
+                        <td>{{ i['title'] }}</td>
+                        {% if i['data'] and i['data']|length > 0 %}
+                        <td>{{ i['data'][0]['date'] }}</td>
+                        <td>
+                            {% for key, value in i['data'][0].items() %}
+                                {% if key != 'date' %}
+                                    <span class="me-3"><strong>{{ key|title }}:</strong> {{ value }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        {% else %}
+                        <td colspan="2" class="text-muted">No data available</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

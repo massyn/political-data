@@ -1,0 +1,13 @@
+title: RBA Cash Rate Target
+category: Economy
+frequency: Month
+source: https://www.rba.gov.au/statistics/cash-rate/
+description: This indicator tracks the Reserve Bank of Australia's official cash rate target, which is the interest rate on overnight loans in the money market. The RBA uses the cash rate as its primary monetary policy tool to influence inflation and economic growth. Changes to the cash rate typically flow through to consumer and business lending rates. The 'value' field represents the cash rate target as a percentage per annum.
+schema:
+  date: The date of the RBA board decision
+  value: The cash rate target (percentage per annum)
+graph:
+  - x: date
+    y: value
+    title: Cash Rate
+    overlay_metric: prime_minister

@@ -1,0 +1,13 @@
+title: GDP Growth
+category: Economy
+frequency: Quarter
+source: https://www.abs.gov.au/statistics/economy/national-accounts/australian-national-accounts-national-income-expenditure-and-product
+description: This indicator tracks Australia's Gross Domestic Product (GDP) growth rate, measuring the change in the total value of goods and services produced in the economy. GDP growth is the primary measure of economic performance and is central to evaluating government economic management. The 'value' field represents the seasonally adjusted chain volume measure of GDP growth as a percentage change from the previous quarter.
+schema:
+  date: The last day of the quarter
+  value: GDP growth rate quarter-on-quarter (percentage)
+graph:
+  - x: date
+    y: value
+    title: GDP Growth (% quarterly)
+    overlay_metric: prime_minister

@@ -1,0 +1,18 @@
+title: Wage Price Index
+category: Employment
+frequency: Quarter
+source: https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/wage-price-index-australia
+description: This indicator tracks the Wage Price Index (WPI) for Australia, measuring changes in the price of labor. When compared with the Consumer Price Index, it shows whether wages are keeping pace with the cost of living - a critical measure of living standards. The 'value' field represents the year-over-year percentage change in the WPI, while the 'index' field shows the absolute index value (base period 2008-09 = 100).
+schema:
+  date: The last day of the quarter
+  value: Annual wage growth (percentage change year-on-year)
+  index: Wage Price Index (base period 2008-09 = 100)
+graph:
+  - x: date
+    y: value
+    title: Annual Wage Growth (%)
+    overlay_metric: prime_minister
+  - x: date
+    y: index
+    title: Wage Price Index
+    overlay_metric: prime_minister

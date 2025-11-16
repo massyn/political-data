@@ -1,0 +1,18 @@
+title: Consumer Price Index (CPI)
+category: Cost of Living
+frequency: Quarter
+source: https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia
+description: This indicator tracks the Consumer Price Index (CPI) for Australia, measuring changes in the cost of living over time. The 'value' field represents the year-over-year inflation rate as a percentage (e.g., 3.24% means prices rose 3.24% compared to the same quarter last year). The 'index' field is the absolute CPI index value using 2011-12 as the base period (100), allowing for long-term price comparisons.
+schema:
+  date: The date of the CPI measurement (end of quarter)
+  value: The year-over-year inflation rate (percentage change)
+  index: The CPI index value (base period 2011-12 = 100)
+graph:
+  - x: date
+    y: value
+    title: Percentage change
+    overlay_metric: prime_minister
+  - x: date
+    y: index
+    title: CPI Index value
+    overlay_metric: prime_minister

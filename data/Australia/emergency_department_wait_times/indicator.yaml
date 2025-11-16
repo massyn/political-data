@@ -1,0 +1,13 @@
+title: Emergency Department Wait Times
+category: Health
+frequency: Quarter
+source: https://www.aihw.gov.au/reports/hospitals/emergency-department-care-activity
+description: This indicator tracks emergency department performance across Australian public hospitals, measuring the percentage of patients seen within 4 hours of arrival. This is a key National Emergency Access Target (NEAT) and reflects the accessibility and efficiency of emergency healthcare. The 'value' field represents the percentage of emergency department presentations completed (admitted, referred, or discharged) within 4 hours.
+schema:
+  date: The last day of the quarter
+  value: Percentage of patients seen within 4 hours
+graph:
+  - x: date
+    y: value
+    title: Patients Seen Within 4 Hours (%)
+    overlay_metric: prime_minister

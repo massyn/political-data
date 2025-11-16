@@ -1,0 +1,13 @@
+title: Unemployment Rate
+category: Employment
+frequency: Month
+source: https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia
+description: This indicator tracks Australia's unemployment rate, which measures the percentage of people in the labour force who are actively seeking work but unable to find employment. The unemployment rate is a key indicator of economic health and labour market conditions. The 'value' field represents the seasonally adjusted unemployment rate as a percentage of the labour force.
+schema:
+  date: The last day of the month for the unemployment measurement
+  value: The seasonally adjusted unemployment rate (percentage)
+graph:
+  - x: date
+    y: value
+    title: Unemployment Rate (%)
+    overlay_metric: prime_minister
