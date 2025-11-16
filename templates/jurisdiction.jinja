@@ -18,7 +18,7 @@
         <h2 class="mb-3">Government Scorecard</h2>
         <p class="text-muted mb-3">Performance summary of the last 5 governments across all tracked metrics</p>
         <div class="table-responsive">
-            <table class="table table-sm">
+            <table class="table table-sm table-hover">
                 <thead>
                     <tr>
                         <th>Government</th>
@@ -27,18 +27,20 @@
                         <th class="text-center" style="color: #28a745;">Improved</th>
                         <th class="text-center" style="color: #ffc107;">No Change</th>
                         <th class="text-center" style="color: #dc3545;">Worsened</th>
+                        <th class="text-center" style="color: #6c757d;">Missing</th>
                         <th class="text-center">Score</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for gov in government_scorecard %}
-                    <tr>
+                    <tr onclick="window.location='{{ jurisdiction.lower() }}_gov_{{ gov.id }}.html';" style="cursor: pointer;">
                         <td><strong>{{ gov.name }}</strong></td>
                         <td><span class="badge" style="background-color: {{ gov.colour }};">{{ gov.party }}</span></td>
                         <td>{{ gov.date }}</td>
                         <td class="text-center"><strong style="color: #28a745; font-size: 1.2rem;">{{ gov.green }}</strong></td>
                         <td class="text-center"><strong style="color: #ffc107; font-size: 1.2rem;">{{ gov.amber }}</strong></td>
                         <td class="text-center"><strong style="color: #dc3545; font-size: 1.2rem;">{{ gov.red }}</strong></td>
+                        <td class="text-center"><strong style="color: #6c757d; font-size: 1.2rem;">{{ gov.missing }}</strong></td>
                         <td class="text-center">
                             <strong style="font-size: 1.3rem; color: {% if gov.score > 0 %}#28a745{% elif gov.score < 0 %}#dc3545{% else %}#ffc107{% endif %};">
                                 {{ "%+d"|format(gov.score) }}

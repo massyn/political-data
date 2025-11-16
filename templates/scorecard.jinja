@@ -1,0 +1,124 @@
+{% extends "base.jinja" %}
+
+{% block title %}{{ government.name }} - {{ jurisdiction }} - Political Data Dashboard{% endblock %}
+
+{% block content %}
+<div class="my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ jurisdiction.lower() }}.html">{{ jurisdiction }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ government.name }}</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">{{ government.name }}</h1>
+
+    <div class="content-card mb-4">
+        <h2 class="mb-3">Government Details</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Prime Minister:</strong> {{ government.name }}</p>
+                <p><strong>Party:</strong> <span class="badge" style="background-color: {{ government.colour }};">{{ government.party }}</span></p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Start Date:</strong> {{ government.date }}</p>
+                {% if government.end_date %}
+                <p><strong>End Date:</strong> {{ government.end_date }}</p>
+                {% else %}
+                <p><strong>Status:</strong> <span class="badge bg-success">Current Government</span></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="content-card mb-4">
+        <h2 class="mb-3">Performance Summary</h2>
+        <p class="text-muted mb-3">Overall performance across all tracked metrics during this government's term</p>
+        <div class="row text-center">
+            <div class="col-md-2">
+                <div class="p-3">
+                    <h3 style="color: #28a745; font-size: 2.5rem; margin-bottom: 0;">{{ government.green }}</h3>
+                    <p class="text-muted mb-0">Improved</p>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3">
+                    <h3 style="color: #ffc107; font-size: 2.5rem; margin-bottom: 0;">{{ government.amber }}</h3>
+                    <p class="text-muted mb-0">No Change</p>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3">
+                    <h3 style="color: #dc3545; font-size: 2.5rem; margin-bottom: 0;">{{ government.red }}</h3>
+                    <p class="text-muted mb-0">Worsened</p>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="p-3">
+                    <h3 style="color: #6c757d; font-size: 2.5rem; margin-bottom: 0;">{{ government.missing }}</h3>
+                    <p class="text-muted mb-0">Missing Data</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3">
+                    <h3 style="font-size: 2.5rem; margin-bottom: 0; color: {% if government.score > 0 %}#28a745{% elif government.score < 0 %}#dc3545{% else %}#ffc107{% endif %};">
+                        {{ "%+d"|format(government.score) }}
+                    </h3>
+                    <p class="text-muted mb-0">Net Score</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% set categories = {} %}
+    {% for i in indicators %}
+        {% if i['category'] not in categories %}
+            {% set _ = categories.update({i['category']: []}) %}
+        {% endif %}
+        {% set _ = categories[i['category']].append(i) %}
+    {% endfor %}
+
+    <div class="content-card">
+        <h2 class="mb-4">Indicators</h2>
+        <p class="text-muted mb-3">Performance on each indicator during this government's term</p>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Indicator</th>
+                        <th>Start Value</th>
+                        <th>End Value</th>
+                        <th>Change</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category, category_indicators in categories.items()|sort %}
+                    {% for i in category_indicators|sort(attribute='title') %}
+                    <tr onclick="window.location='{{ jurisdiction.lower() }}_{{ i['id'].lower() }}.html';" style="cursor: pointer;">
+                        <td>{% if loop.first %}<strong>{{ category }}</strong>{% endif %}</td>
+                        <td>{{ i['title'] }}</td>
+                        {% if i.get('scorecard_data') %}
+                        <td>{{ "%.2f"|format(i.scorecard_data.start_value) }}</td>
+                        <td>{{ "%.2f"|format(i.scorecard_data.end_value) }}</td>
+                        <td>{{ "%+.2f"|format(i.scorecard_data.change) }} ({{ "%+.1f"|format(i.scorecard_data.change_pct) }}%)</td>
+                        <td class="text-center" style="font-size: 2rem;">
+                            <strong style="color: {% if i.scorecard_data.status == 'Improved' %}#28a745{% elif i.scorecard_data.status == 'Worsened' %}#dc3545{% else %}#ffc107{% endif %};">
+                                {{ i.scorecard_data.status_icon }}
+                            </strong>
+                        </td>
+                        {% else %}
+                        <td colspan="4" class="text-muted">No data available for this period</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

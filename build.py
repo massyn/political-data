@@ -234,6 +234,7 @@ def calculate_government_scorecard_summary(D, jurisdiction, indicators):
         green_count = 0
         amber_count = 0
         red_count = 0
+        missing_count = 0
 
         # Check each indicator
         for indicator in indicators:
@@ -257,6 +258,8 @@ def calculate_government_scorecard_summary(D, jurisdiction, indicators):
                             red_count += 1
                         elif status == 'No Change':
                             amber_count += 1
+                        elif status is None:
+                            missing_count += 1
 
                         break  # Only process first graph config with direction
 
@@ -264,6 +267,7 @@ def calculate_government_scorecard_summary(D, jurisdiction, indicators):
         net_score = green_count - red_count
 
         scorecard.append({
+            'id': str(i),  # Government index for URL generation
             'name': gov['value'],
             'party': gov['party'],
             'colour': gov['colour'],
@@ -271,11 +275,140 @@ def calculate_government_scorecard_summary(D, jurisdiction, indicators):
             'green': green_count,
             'amber': amber_count,
             'red': red_count,
+            'missing': missing_count,
             'total': green_count + amber_count + red_count,
             'score': net_score
         })
 
     return scorecard
+
+def calculate_government_scorecard_detailed(D, jurisdiction, government_index, indicators):
+    """Calculate detailed scorecard for a specific government showing all indicators"""
+    # Get prime minister data to know the governments
+    pm_data = D.result(jurisdiction, 'prime_minister', is_latest=False)
+    if not pm_data or not pm_data.get('data'):
+        return None, None
+
+    governments = pm_data['data']
+
+    # Check if government_index is valid
+    if government_index < 0 or government_index >= len(governments):
+        return None, None
+
+    gov = governments[government_index]
+    next_gov = governments[government_index + 1] if government_index + 1 < len(governments) else None
+
+    # Prepare government info with end_date
+    government_info = {
+        'id': str(government_index),
+        'name': gov['value'],
+        'party': gov['party'],
+        'colour': gov['colour'],
+        'date': gov['date'],
+        'end_date': next_gov['date'] if next_gov else None
+    }
+
+    # Calculate performance for each indicator
+    indicators_with_scorecard = []
+    green_count = 0
+    amber_count = 0
+    red_count = 0
+    missing_count = 0
+
+    for indicator in indicators:
+        indicator_data = indicator.copy()
+
+        # Check if indicator has direction (can be scored)
+        if indicator.get('graph') and indicator['graph'] != False:
+            for graph_config in indicator['graph']:
+                if 'direction' in graph_config and 'overlay_metric' in graph_config:
+                    # Get full indicator data
+                    full_data = D.result(jurisdiction, indicator['id'], is_latest=False)
+
+                    # Calculate performance for this government
+                    scorecard_data = None
+
+                    # Find start value (first data point >= government start)
+                    start_value = None
+                    for row in full_data['data']:
+                        if row['date'] >= gov['date']:
+                            try:
+                                start_value = float(row[graph_config['y']])
+                                break
+                            except (ValueError, KeyError):
+                                pass
+
+                    # Find end value (last data point < next government, or latest)
+                    end_value = None
+                    if next_gov:
+                        for row in reversed(full_data['data']):
+                            if row['date'] < next_gov['date']:
+                                try:
+                                    end_value = float(row[graph_config['y']])
+                                    break
+                                except (ValueError, KeyError):
+                                    pass
+                    else:
+                        try:
+                            end_value = float(full_data['data'][-1][graph_config['y']])
+                        except (ValueError, KeyError):
+                            pass
+
+                    # Only include if we have both values
+                    if start_value is not None and end_value is not None:
+                        change = end_value - start_value
+                        change_pct = (change / start_value * 100) if start_value != 0 else 0
+
+                        # Determine status based on direction
+                        direction = graph_config['direction']
+                        if direction == 'higher_is_better':
+                            if change > 0.01:
+                                status, status_icon = 'Improved', '▲'
+                                green_count += 1
+                            elif change < -0.01:
+                                status, status_icon = 'Worsened', '▼'
+                                red_count += 1
+                            else:
+                                status, status_icon = 'No Change', '−'
+                                amber_count += 1
+                        else:  # lower_is_better
+                            if change < -0.01:
+                                status, status_icon = 'Improved', '▼'
+                                green_count += 1
+                            elif change > 0.01:
+                                status, status_icon = 'Worsened', '▲'
+                                red_count += 1
+                            else:
+                                status, status_icon = 'No Change', '−'
+                                amber_count += 1
+
+                        scorecard_data = {
+                            'start_value': start_value,
+                            'end_value': end_value,
+                            'change': change,
+                            'change_pct': change_pct,
+                            'status': status,
+                            'status_icon': status_icon
+                        }
+
+                    if scorecard_data:
+                        indicator_data['scorecard_data'] = scorecard_data
+                    else:
+                        # Data is missing for this indicator during this government
+                        missing_count += 1
+
+                    break  # Only process first graph config with direction
+
+        indicators_with_scorecard.append(indicator_data)
+
+    # Add summary counts to government info
+    government_info['green'] = green_count
+    government_info['amber'] = amber_count
+    government_info['red'] = red_count
+    government_info['missing'] = missing_count
+    government_info['score'] = green_count - red_count
+
+    return government_info, indicators_with_scorecard
 
 def main(target):
     D = Data()
@@ -322,6 +455,20 @@ def main(target):
         render_jinja('jurisdiction.jinja', f'{target}/{j.lower()}.html',
                     jurisdiction = j, indicators = indicators_with_rag,
                     government_scorecard = government_scorecard)
+
+        # Generate scorecard pages for each government
+        if government_scorecard:
+            for gov_summary in government_scorecard:
+                gov_index = int(gov_summary['id'])
+                government_info, indicators_for_gov = calculate_government_scorecard_detailed(
+                    D, j, gov_index, indicators_with_rag
+                )
+
+                if government_info and indicators_for_gov:
+                    render_jinja('scorecard.jinja', f"{target}/{j.lower()}_gov_{gov_summary['id']}.html",
+                                jurisdiction = j,
+                                government = government_info,
+                                indicators = indicators_for_gov)
 
         for i in D.indicators(j):
             res = D.result(j,i['id'],is_latest=False)
