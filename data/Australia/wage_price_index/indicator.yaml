@@ -10,10 +10,10 @@ schema:
 graph:
   - x: date
     y: value
-    title: Annual Wage Growth % (Annual)
+    title: Annual Wage Growth %
     overlay_metric: prime_minister
     direction: higher_is_better
   - x: date
-    y: quarter
-    title: Wage Price Index % (Quarterly)
+    y: index
+    title: Wage Price Index (2008-09 = 100)
     overlay_metric: prime_minister
