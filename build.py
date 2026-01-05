@@ -2,6 +2,7 @@ import os
 import logging
 import jinja2
 import markdown
+import shutil
 from data import Data
 
 def calculate_scorecard(indicator_data, overlay_data, y_field, direction):
@@ -218,8 +219,18 @@ def calculate_current_government_rag(indicator_data, overlay_data, y_field, dire
 
 def calculate_government_scorecard_summary(D, jurisdiction, indicators):
     """Calculate summary scorecard for last 5 governments"""
-    # Get prime minister data to know the governments
-    pm_data = D.result(jurisdiction, 'prime_minister', is_latest=False)
+    # Find the government leader indicator (category=Government, graph=False)
+    gov_leader_id = None
+    for indicator in indicators:
+        if indicator.get('category') == 'Government' and indicator.get('graph') == False:
+            gov_leader_id = indicator['id']
+            break
+
+    if not gov_leader_id:
+        return None
+
+    # Get government leader data (prime_minister, president, etc.)
+    pm_data = D.result(jurisdiction, gov_leader_id, is_latest=False)
     if not pm_data or not pm_data.get('data'):
         return None
 
@@ -284,8 +295,18 @@ def calculate_government_scorecard_summary(D, jurisdiction, indicators):
 
 def calculate_government_scorecard_detailed(D, jurisdiction, government_index, indicators):
     """Calculate detailed scorecard for a specific government showing all indicators"""
-    # Get prime minister data to know the governments
-    pm_data = D.result(jurisdiction, 'prime_minister', is_latest=False)
+    # Find the government leader indicator (category=Government, graph=False)
+    gov_leader_id = None
+    for indicator in indicators:
+        if indicator.get('category') == 'Government' and indicator.get('graph') == False:
+            gov_leader_id = indicator['id']
+            break
+
+    if not gov_leader_id:
+        return None, None
+
+    # Get government leader data (prime_minister, president, etc.)
+    pm_data = D.result(jurisdiction, gov_leader_id, is_latest=False)
     if not pm_data or not pm_data.get('data'):
         return None, None
 
@@ -413,6 +434,19 @@ def calculate_government_scorecard_detailed(D, jurisdiction, government_index, i
 def main(target):
     D = Data()
     os.makedirs(target,exist_ok=True)
+
+    # Create flags directory and copy flag images
+    flags_dir = os.path.join(target, 'flags')
+    os.makedirs(flags_dir, exist_ok=True)
+
+    for j in D.jurisdictions():
+        flag_source = os.path.join('data', j, 'flag.jpg')
+        flag_dest = os.path.join(flags_dir, f'{j}.jpg')
+        if os.path.exists(flag_source):
+            shutil.copy2(flag_source, flag_dest)
+            print(f"Copied flag: {flag_source} -> {flag_dest}")
+        else:
+            print(f"Warning: Flag not found for {j} at {flag_source}")
 
     # Render the static markdown pages
     render_markdown_page('pages/about.md', f'{target}/about.html', 'about', 'About')

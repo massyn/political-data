@@ -377,11 +377,12 @@ This is an open-source project. We need:
 - **Statisticians**: Validate methodology and suggest improvements
 - **Citizens**: Use it, share it, hold politicians accountable
 
-Repository: [https://github.com/massyn/political-data](https://github.com/massyn/political-data)
+Key Links
 
-Questions or feedback: [Contact method]
+- [Repository](https://github.com/massyn/political-data)
+- [Issues](https://github.com/massyn/political-data/issues)
+- [Questions or feedback](https://github.com/massyn/political-data/discussions)
 
 ---
 
-**Last updated:** 16 November 2025  
-**Version:** 1.0
+**Last updated:** 6 November 2026
