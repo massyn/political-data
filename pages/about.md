@@ -23,6 +23,7 @@ This dashboard exists to make those answers impossible to spin.
 It tracks objective indicators—housing costs, crime rates, healthcare wait times, education completion, and the cost of essential goods—and evaluates whether they're improving or declining.
 
 Every metric is:
+
 - **Independently collected** (not by the government being evaluated)
 - **Publicly verifiable** (raw data, receipts, and sources published)
 - **Historically preserved** (can't be revised or deleted)
@@ -45,6 +46,7 @@ Citizens decide at the ballot box whether the explanation is valid.
 ### 2. **Hard Numbers Beat Narrative**
 
 We track things you can't argue with:
+
 - The Essentials Basket (milk, bread, diesel, eggs, rice) costs what it costs. We publish the receipts.
 - Crime rates are what they are. Police report them.
 - Hospital wait times are measured. Patients experience them.
@@ -63,8 +65,8 @@ The system is designed to resist manipulation:
 ### 4. **Transparency Is Non-Negotiable**
 
 Every data point is public:
+
 - Raw CSV files downloadable by anyone
-- Receipts and sources published (photos of grocery receipts, links to official stats)
 - Historical data preserved permanently (GitHub version control ensures nothing is deleted)
 - Calculation methodology documented and open-source
 
@@ -85,6 +87,7 @@ We acknowledge that external shocks (pandemics, global recessions) affect outcom
 ### Indicators vs Metrics
 
 **Indicators** are raw data points we track:
+
 - Essentials Basket cost: $16.20
 - Housing affordability: 28% of households spending <30% of income on housing
 - Crime rate: 250 violent crimes per 100k population
@@ -93,6 +96,7 @@ We acknowledge that external shocks (pandemics, global recessions) affect outcom
 Indicators are just facts. No judgment.
 
 **Metrics** are evaluations of those indicators:
+
 - "Is cost of living under control?" → Takes Essentials Basket + CPI indicators → Compares year-on-year → Produces 🟢 Green, 🟡 Amber, or 🔴 Red
 
 Metrics answer the questions citizens care about.
@@ -130,6 +134,7 @@ Citizens don't need to understand statistical methodology. They just pick a ques
 The system filters to relevant indicators, applies the RAG logic, and answers: **Yes or No**, with graphs and evidence.
 
 Reports can be filtered by:
+
 - Government term (current, previous, specific)
 - Time period (last 12 months, last 3 years)
 - Region (national, Sydney, Melbourne, regional areas)
@@ -147,8 +152,9 @@ Every report gets a permanent URL. Share it. Debate it. But the facts don't chan
 All reports are pre-generated as static HTML. No databases, no servers, no complex infrastructure. Just HTML files served fast.
 
 This makes the system:
+
 - **Impossible to hack** (no dynamic server to exploit)
-- **Cheap to run** (free hosting on GitHub Pages)
+- **Cheap to run** (free hosting on Cloudflare Pages)
 - **Permanent** (files are files, they don't break)
 - **Transparent** (view source = see everything)
 

@@ -1,0 +1,19 @@
+title: Residential Property Price Index (RPPI)
+category: Housing
+frequency: Quarter
+source: https://www.statssa.gov.za/?p=17490
+description: This indicator tracks the Residential Property Price Index (RPPI) for South Africa, compiled by Statistics South Africa in partnership with the South African Reserve Bank and with the support of the International Monetary Fund. The RPPI measures changes in residential property prices over time. The 'value' field represents the year-over-year percentage change in property prices, while the 'index' field is the absolute RPPI index value, allowing for long-term price comparisons. Rising values indicate increasing property prices, which can impact housing affordability.
+schema:
+  date: The date of the RPPI measurement (end of quarter)
+  value: The year-over-year percentage change in property prices
+  index: The RPPI index value
+graph:
+  - x: date
+    y: value
+    title: Property Price Change (%)
+    overlay_metric: president
+    direction: lower_is_better
+  - x: date
+    y: index
+    title: RPPI Index value
+    overlay_metric: president

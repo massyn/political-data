@@ -1,0 +1,14 @@
+title: Murder Rate
+category: Safety & Crime
+frequency: Annual
+source: https://www.saps.gov.za/
+description: This indicator tracks the annual number of murders in South Africa as reported by the South African Police Service (SAPS). The 'value' field represents the total number of murders recorded in the reporting period (April 1 to March 31 of the following year, aligned with the South African fiscal year). SAPS publishes official crime statistics annually. Note that SAPS official data starts from 1994 (post-apartheid), though some historical estimates exist. This is a critical indicator of public safety and violent crime levels.
+schema:
+  date: The end date of the reporting period (March 31 of each year)
+  value: The total number of murders recorded
+graph:
+  - x: date
+    y: value
+    title: Annual Murders
+    overlay_metric: president
+    direction: lower_is_better

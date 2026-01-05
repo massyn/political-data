@@ -1,0 +1,11 @@
+title: President of South Africa
+category: Government
+frequency: 3 Year
+source: https://www.thepresidency.gov.za/history
+description: This indicator tracks who the President of South Africa is following each election. From 1961 to 1984, the State President position was largely ceremonial. After constitutional reforms in 1984, the State President became an executive post. Since 1994, following the end of apartheid, the President has been elected through democratic multiracial elections. This indicator is recorded at every election, even when the incumbent wins re-election, allowing tracking of government continuity and change over time.
+schema:
+  date: The date the president took office (or won election after 1994)
+  value: The full name of the President
+  party: The name of the party
+  colour: The RGB colour used to indicate the party
+graph: False

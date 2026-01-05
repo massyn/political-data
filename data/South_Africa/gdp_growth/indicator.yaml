@@ -1,0 +1,14 @@
+title: GDP Growth Rate
+category: Economy
+frequency: Quarter
+source: https://www.statssa.gov.za/
+description: This indicator tracks the Gross Domestic Product (GDP) growth rate for South Africa as published by Statistics South Africa (StatsSA). GDP growth measures the rate of change in the value of all goods and services produced in the economy. The 'value' field represents the quarter-on-quarter GDP growth rate as a percentage (seasonally adjusted). Positive values indicate economic expansion, while negative values indicate contraction. This is a key indicator of overall economic health and performance.
+schema:
+  date: The date of the GDP measurement (end of quarter)
+  value: The quarter-on-quarter GDP growth rate (percentage change)
+graph:
+  - x: date
+    y: value
+    title: GDP Growth Rate (%)
+    overlay_metric: president
+    direction: higher_is_better

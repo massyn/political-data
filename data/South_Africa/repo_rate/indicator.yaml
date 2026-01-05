@@ -1,0 +1,14 @@
+title: SARB Repo Rate
+category: Economy
+frequency: Month
+source: https://www.resbank.co.za/Research/Rates/Pages/Rates-Home.aspx
+description: This indicator tracks the South African Reserve Bank (SARB) repurchase rate (repo rate), which is the official monetary policy interest rate. The repo rate is the rate at which the central bank lends money to commercial banks and is a key tool for managing inflation and economic stability. Changes to the repo rate directly impact borrowing costs, consumer spending, and economic growth. The 'value' field represents the repo rate as a percentage per annum.
+schema:
+  date: The date the repo rate was set or changed (end of month)
+  value: The repo rate as a percentage per annum
+graph:
+  - x: date
+    y: value
+    title: SARB Repo Rate (%)
+    overlay_metric: president
+    direction: lower_is_better
