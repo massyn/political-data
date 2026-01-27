@@ -1,0 +1,14 @@
+title: Unemployment Rate
+category: Employment
+frequency: Month
+source: https://fred.stlouisfed.org/series/UNRATE
+description: This indicator tracks the United States unemployment rate, which measures the percentage of people in the labor force who are actively seeking work but unable to find employment. The unemployment rate is a key indicator of economic health and labor market conditions. The 'value' field represents the seasonally adjusted unemployment rate as a percentage of the labor force, as measured by the Bureau of Labor Statistics.
+schema:
+  date: The last day of the month for the unemployment measurement
+  value: The seasonally adjusted unemployment rate (percentage)
+graph:
+  - x: date
+    y: value
+    title: Unemployment Rate (%)
+    overlay_metric: president
+    direction: lower_is_better

@@ -1,0 +1,19 @@
+title: Consumer Price Index (CPI)
+category: Cost of Living
+frequency: Quarter
+source: https://fred.stlouisfed.org/series/CPIAUCSL
+description: This indicator tracks the Consumer Price Index (CPI) for the United States, measuring changes in the cost of living over time. The 'value' field represents the year-over-year inflation rate as a percentage (e.g., 3.24% means prices rose 3.24% compared to the same quarter last year). The 'index' field is the absolute CPI index value (CPI-U, 1982-84=100), the most widely used measure of U.S. inflation from the Bureau of Labor Statistics.
+schema:
+  date: The date of the CPI measurement (end of quarter)
+  value: The year-over-year inflation rate (percentage change)
+  index: The CPI index value (base period 1982-84 = 100)
+graph:
+  - x: date
+    y: value
+    title: Percentage change
+    overlay_metric: president
+    direction: lower_is_better
+  - x: date
+    y: index
+    title: CPI Index value
+    overlay_metric: president

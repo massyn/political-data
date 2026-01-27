@@ -1,0 +1,11 @@
+title: President of the United States
+category: Government
+frequency: 3 Year
+source: https://www.archives.gov/electoral-college
+description: This indicator tracks who the President of the United States is following each presidential election. It is recorded at every election, even when the incumbent wins re-election, allowing tracking of government continuity and change over time. Elections occur every 4 years on the first Tuesday after the first Monday in November.
+schema:
+  date: The date of the presidential election
+  value: The full name of the President
+  party: The name of the political party
+  colour: The RGB colour used to indicate the party
+graph: False

@@ -1,0 +1,14 @@
+title: GDP Growth
+category: Economy
+frequency: Quarter
+source: https://fred.stlouisfed.org/series/GDPC1
+description: This indicator tracks the United States Gross Domestic Product (GDP) growth rate on a quarter-on-quarter basis. The 'value' field represents the percentage change in real GDP from the previous quarter, seasonally adjusted at annual rates. Real GDP is the inflation-adjusted value of all goods and services produced in the economy. Data is sourced from the Bureau of Economic Analysis (BEA) via FRED.
+schema:
+  date: The last day of the quarter
+  value: GDP growth rate quarter-on-quarter (percentage)
+graph:
+  - x: date
+    y: value
+    title: GDP Growth Rate (%)
+    overlay_metric: president
+    direction: higher_is_better
