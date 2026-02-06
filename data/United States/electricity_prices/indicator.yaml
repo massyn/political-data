@@ -1,0 +1,14 @@
+title: Electricity Prices
+category: Cost of Living
+frequency: Month
+source: https://fred.stlouisfed.org/series/APU000072610
+description: This indicator tracks the average price of electricity per kilowatt-hour (kWh) paid by U.S. consumers. The 'value' field represents the cost in dollars per kWh. Electricity is an essential utility affecting all households and is a key component of the cost of living. Price changes reflect energy market conditions, infrastructure costs, and policy decisions. Data is collected monthly by the Bureau of Labor Statistics.
+schema:
+  date: The date of the price observation (end of month)
+  value: Average electricity price in US dollars per kilowatt-hour ($/kWh)
+graph:
+  - x: date
+    y: value
+    title: Electricity Price ($/kWh)
+    overlay_metric: president
+    direction: lower_is_better

@@ -1,0 +1,14 @@
+title: Food Prices (Groceries)
+category: Cost of Living
+frequency: Month
+source: https://fred.stlouisfed.org/series/CUSR0000SAF11
+description: This indicator tracks the Consumer Price Index for Food at Home, measuring the change in prices paid by urban consumers for groceries and food items purchased for preparation at home. The index uses a base period where 1982-84 = 100. This is a core measure of food affordability and represents a significant portion of household budgets. Data is collected monthly by the Bureau of Labor Statistics as part of the CPI program.
+schema:
+  date: The date of the price index (end of month)
+  value: CPI Food at Home index value (1982-84 = 100)
+graph:
+  - x: date
+    y: value
+    title: Food at Home CPI Index (1982-84=100)
+    overlay_metric: president
+    direction: lower_is_better

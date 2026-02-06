@@ -1,0 +1,14 @@
+title: Real Average Hourly Earnings
+category: Employment
+frequency: Quarter
+source: https://fred.stlouisfed.org/series/LES1252881600Q
+description: This indicator tracks inflation-adjusted average hourly earnings for all employees in the private sector. The 'value' field represents real earnings in constant 1982-84 dollars, meaning the purchasing power of wages after accounting for inflation. This is a critical measure of whether workers are actually getting ahead or falling behind economically. Rising real earnings indicate improving living standards, while stagnant or declining real earnings mean wages aren't keeping up with the cost of living. Data is calculated quarterly by the Bureau of Labor Statistics.
+schema:
+  date: The date of the measurement (end of quarter)
+  value: Real average hourly earnings (1982-84 dollars)
+graph:
+  - x: date
+    y: value
+    title: Real Average Hourly Earnings (1982-84$)
+    overlay_metric: president
+    direction: higher_is_better

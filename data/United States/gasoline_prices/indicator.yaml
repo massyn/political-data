@@ -1,0 +1,14 @@
+title: Gasoline Prices
+category: Cost of Living
+frequency: Month
+source: https://fred.stlouisfed.org/series/GASREGW
+description: This indicator tracks the U.S. Regular All Formulations Retail Gasoline Price (Dollars per Gallon). The 'value' field represents the average retail price consumers pay at the pump. This is one of the most visible prices in the economy and directly impacts household budgets, commuting costs, and overall cost of living. Data is collected weekly by the U.S. Energy Information Administration and aggregated to monthly observations.
+schema:
+  date: The date of the price observation (end of month)
+  value: Average retail gasoline price in US dollars per gallon
+graph:
+  - x: date
+    y: value
+    title: Gasoline Price ($/gallon)
+    overlay_metric: president
+    direction: lower_is_better

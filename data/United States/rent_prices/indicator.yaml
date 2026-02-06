@@ -1,0 +1,14 @@
+title: Rent Prices
+category: Housing
+frequency: Month
+source: https://fred.stlouisfed.org/series/CUSR0000SEHA
+description: This indicator tracks the Consumer Price Index for Rent of Primary Residence, measuring changes in rental costs for urban consumers. The index uses a base period where 1982-84 = 100. Rent is a major expense for millions of American households, and rising rents directly reduce disposable income and quality of life. This measure captures the rental housing cost component of overall inflation. Data is collected monthly by the Bureau of Labor Statistics as part of the CPI program.
+schema:
+  date: The date of the price index (end of month)
+  value: CPI Rent of Primary Residence index value (1982-84 = 100)
+graph:
+  - x: date
+    y: value
+    title: Rent CPI Index (1982-84=100)
+    overlay_metric: president
+    direction: lower_is_better

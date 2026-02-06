@@ -1,0 +1,14 @@
+title: 30-Year Mortgage Rate
+category: Housing
+frequency: Month
+source: https://fred.stlouisfed.org/series/MORTGAGE30US
+description: This indicator tracks the 30-Year Fixed Rate Mortgage Average in the United States. The 'value' field represents the interest rate as a percentage. This rate determines the cost of borrowing for homebuyers and is a critical factor in housing affordability. Lower rates make homeownership more accessible, while higher rates increase monthly payments and can cool the housing market. Data is collected weekly by Freddie Mac's Primary Mortgage Market Survey and aggregated to monthly observations.
+schema:
+  date: The date of the rate observation (end of month)
+  value: 30-year fixed mortgage rate (percentage)
+graph:
+  - x: date
+    y: value
+    title: 30-Year Mortgage Rate (%)
+    overlay_metric: president
+    direction: lower_is_better

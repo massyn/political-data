@@ -1,0 +1,14 @@
+title: Healthcare Costs
+category: Health
+frequency: Month
+source: https://fred.stlouisfed.org/series/CUSR0000SEMD
+description: This indicator tracks the Consumer Price Index for Medical Care Services, measuring changes in the cost of healthcare services including doctor visits, hospital care, and other medical services. The index uses a base period where 1982-84 = 100. Healthcare costs are a major concern for American families, and rising costs can force difficult choices between medical care and other essential expenses. Unlike most consumer goods, healthcare is often a necessity that cannot be delayed or avoided. Data is collected monthly by the Bureau of Labor Statistics as part of the CPI program.
+schema:
+  date: The date of the price index (end of month)
+  value: CPI Medical Care Services index value (1982-84 = 100)
+graph:
+  - x: date
+    y: value
+    title: Medical Care Services CPI Index (1982-84=100)
+    overlay_metric: president
+    direction: lower_is_better

@@ -1,0 +1,14 @@
+title: Median Home Sales Price
+category: Housing
+frequency: Quarter
+source: https://fred.stlouisfed.org/series/MSPUS
+description: This indicator tracks the median sales price of houses sold in the United States. The 'value' field represents the price in current dollars at which half of homes sold for more and half sold for less. This is a key measure of housing affordability and wealth accumulation for American families. Rising prices can indicate economic growth but also make homeownership less accessible. Data is collected quarterly by the U.S. Census Bureau and Department of Housing and Urban Development.
+schema:
+  date: The date of the measurement (end of quarter)
+  value: Median home sales price in US dollars
+graph:
+  - x: date
+    y: value
+    title: Median Home Sales Price ($)
+    overlay_metric: president
+    direction: lower_is_better
