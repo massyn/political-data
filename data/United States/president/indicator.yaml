@@ -2,6 +2,7 @@ title: President of the United States
 category: Government
 frequency: 3 Year
 source: https://www.archives.gov/electoral-college
+last_updated: 2024-11-05
 description: This indicator tracks who the President of the United States is following each presidential election. It is recorded at every election, even when the incumbent wins re-election, allowing tracking of government continuity and change over time. Elections occur every 4 years on the first Tuesday after the first Monday in November.
 schema:
   date: The date of the presidential election

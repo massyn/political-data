@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python data.py:*)",
+      "WebSearch",
+      "WebFetch(domain:www.aihw.gov.au)",
+      "Bash(python build.py:*)",
+      "WebFetch(domain:www.abs.gov.au)",
+      "WebFetch(domain:www.rba.gov.au)",
+      "WebFetch(domain:www.rateinflation.com)",
+      "WebFetch(domain:www.macrotrends.net)",
+      "Bash(python abs_data_fetcher.py:*)",
+      "WebFetch(domain:fred.stlouisfed.org)",
+      "WebFetch(domain:www.housingdata.gov.au)",
+      "Bash(python:*)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:tradingeconomics.com)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:www.statssa.gov.za)",
+      "WebFetch(domain:www.resbank.co.za)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
