@@ -2,7 +2,7 @@ title: Federal Funds Rate
 category: Economy
 frequency: Month
 source: https://fred.stlouisfed.org/series/FEDFUNDS
-last_updated: 2026-01-31
+last_updated: 2026-02-28
 description: This indicator tracks the Federal Funds Rate, the interest rate at which depository institutions trade federal funds (balances held at Federal Reserve Banks) with each other overnight. It is the Federal Reserve's primary tool for implementing monetary policy and influences all other interest rates in the economy. The 'value' field represents the effective federal funds rate as a percentage per annum. Changes to this rate are decided by the Federal Open Market Committee (FOMC), which typically meets eight times per year.
 schema:
   date: The end of the month

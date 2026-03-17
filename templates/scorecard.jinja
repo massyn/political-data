@@ -18,7 +18,7 @@
         <h2 class="mb-3">Government Details</h2>
         <div class="row">
             <div class="col-md-6">
-                <p><strong>Prime Minister:</strong> {{ government.name }}</p>
+                <p><strong>Leader:</strong> {{ government.name }}</p>
                 <p><strong>Party:</strong> <span class="badge" style="background-color: {{ government.colour }};">{{ government.party }}</span></p>
             </div>
             <div class="col-md-6">
@@ -71,54 +71,162 @@
         </div>
     </div>
 
-    {% set categories = {} %}
-    {% for i in indicators %}
-        {% if i['category'] not in categories %}
-            {% set _ = categories.update({i['category']: []}) %}
-        {% endif %}
-        {% set _ = categories[i['category']].append(i) %}
-    {% endfor %}
-
     <div class="content-card">
-        <h2 class="mb-4">Indicators</h2>
-        <p class="text-muted mb-3">Performance on each indicator during this government's term</p>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Indicator</th>
-                        <th>Start Value</th>
-                        <th>End Value</th>
-                        <th>Change</th>
-                        <th>Performance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for category, category_indicators in categories.items()|sort %}
-                    {% for i in category_indicators|sort(attribute='title') %}
-                    <tr onclick="window.location='{{ jurisdiction.lower() }}_{{ i['id'].lower() }}.html';" style="cursor: pointer;">
-                        <td>{% if loop.first %}<strong>{{ category }}</strong>{% endif %}</td>
-                        <td>{{ i['title'] }}</td>
-                        {% if i.get('scorecard_data') %}
-                        <td>{{ "%.2f"|format(i.scorecard_data.start_value) }}</td>
-                        <td>{{ "%.2f"|format(i.scorecard_data.end_value) }}</td>
-                        <td>{{ "%+.2f"|format(i.scorecard_data.change) }} ({{ "%+.1f"|format(i.scorecard_data.change_pct) }}%)</td>
-                        <td class="text-center" style="font-size: 2rem;">
-                            <strong style="color: {% if i.scorecard_data.status == 'Improved' %}#28a745{% elif i.scorecard_data.status == 'Worsened' %}#dc3545{% else %}#ffc107{% endif %};">
-                                {{ i.scorecard_data.status_icon }}
-                            </strong>
-                        </td>
-                        {% else %}
-                        <td colspan="4" class="text-muted">No data available for this period</td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                    {% endfor %}
-                </tbody>
-            </table>
+        <h2 class="mb-2">Indicators</h2>
+        <p class="text-muted mb-4">
+            Each chart shows this government's performance (coloured line) from when they took office.
+            The dashed horizontal line marks the inherited value.
+            {% if not government.end_date %}The grey dotted line shows the previous government's trend for comparison.{% endif %}
+        </p>
+
+        {% set categories = {} %}
+        {% for i in indicators %}
+            {% if i.get('scorecard_data') %}
+                {% if i['category'] not in categories %}
+                    {% set _ = categories.update({i['category']: []}) %}
+                {% endif %}
+                {% set _ = categories[i['category']].append(i) %}
+            {% endif %}
+        {% endfor %}
+
+        {% for category, category_indicators in categories.items()|sort %}
+        <h4 class="mt-4 mb-3" style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6c757d; border-bottom: 1px solid #e9ecef; padding-bottom: 0.4rem;">{{ category }}</h4>
+        <div class="row g-3 mb-2">
+            {% for i in category_indicators|sort(attribute='title') %}
+            <div class="col-xl-4 col-md-6">
+                <a href="{{ jurisdiction.lower() }}_{{ i['id'].lower() }}.html" style="text-decoration: none; color: inherit;">
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 1rem; height: 100%; border: 1px solid #e9ecef; transition: box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow=''">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="fw-semibold" style="font-size: 0.88rem; line-height: 1.3; padding-right: 0.5rem;">{{ i['title'] }}</div>
+                        <span style="font-size: 1.3rem; line-height: 1; flex-shrink: 0; color: {% if i.scorecard_data.status == 'Improved' %}#28a745{% elif i.scorecard_data.status == 'Worsened' %}#dc3545{% else %}#ffc107{% endif %};">{{ i.scorecard_data.status_icon }}</span>
+                    </div>
+                    {% if i.scorecard_data.get('this_gov_data') and i.scorecard_data.this_gov_data|length > 1 %}
+                    <div style="height: 110px; position: relative;">
+                        <canvas id="chart_{{ i['id'] }}"></canvas>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between mt-2" style="font-size: 0.78rem;">
+                        <span class="text-muted">Inherited: <strong>{{ "%.2f"|format(i.scorecard_data.start_value) }}</strong></span>
+                        <span style="font-weight: 600; color: {% if i.scorecard_data.status == 'Improved' %}#28a745{% elif i.scorecard_data.status == 'Worsened' %}#dc3545{% else %}#ffc107{% endif %};">{{ "%+.1f"|format(i.scorecard_data.change_pct) }}%</span>
+                        <span class="text-muted">Now: <strong>{{ "%.2f"|format(i.scorecard_data.end_value) }}</strong></span>
+                    </div>
+                </div>
+                </a>
+            </div>
+            {% endfor %}
         </div>
+        {% endfor %}
+
+        {% set missing_indicators = [] %}
+        {% for i in indicators %}
+            {% if not i.get('scorecard_data') and i.get('graph') and i['graph'] is not sameas false %}
+                {% set _ = missing_indicators.append(i) %}
+            {% endif %}
+        {% endfor %}
+        {% if missing_indicators %}
+        <div class="mt-4">
+            <p class="text-muted small">No data available during this term: {% for i in missing_indicators %}{{ i['title'] }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        </div>
+        {% endif %}
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% set has_charts = namespace(value=false) %}
+{% for i in indicators %}{% if i.get('scorecard_data') and i.scorecard_data.get('this_gov_data') and i.scorecard_data.this_gov_data|length > 1 %}{% set has_charts.value = true %}{% endif %}{% endfor %}
+{% if has_charts.value %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<script>
+{% for i in indicators %}
+{% if i.get('scorecard_data') and i.scorecard_data.get('this_gov_data') and i.scorecard_data.this_gov_data|length > 1 %}
+(function() {
+    const ctx = document.getElementById('chart_{{ i["id"] }}');
+    if (!ctx) return;
+
+    const thisGovData = {{ i.scorecard_data.this_gov_data|tojson }};
+    const prevGovData = {{ i.scorecard_data.prev_gov_data|tojson }};
+    const inheritedValue = {{ i.scorecard_data.start_value }};
+
+    {% if i.scorecard_data.status == 'Improved' %}
+    const ragColor = '#28a745';
+    {% elif i.scorecard_data.status == 'Worsened' %}
+    const ragColor = '#dc3545';
+    {% else %}
+    const ragColor = '#ffc107';
+    {% endif %}
+
+    const datasets = [];
+    if (prevGovData.length > 1) {
+        datasets.push({
+            label: 'Previous Government',
+            data: prevGovData.map(d => ({ x: d.date, y: d.value })),
+            borderColor: 'rgba(150, 150, 150, 0.55)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            tension: 0.1,
+            fill: false
+        });
+    }
+    datasets.push({
+        label: 'This Government',
+        data: thisGovData.map(d => ({ x: d.date, y: d.value })),
+        borderColor: ragColor,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.1,
+        fill: false
+    });
+
+    new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false },
+                annotation: {
+                    annotations: {
+                        inherited: {
+                            type: 'line',
+                            yMin: inheritedValue,
+                            yMax: inheritedValue,
+                            borderColor: 'rgba(0, 0, 0, 0.2)',
+                            borderWidth: 1,
+                            borderDash: [5, 5]
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'month',
+                        displayFormats: { month: 'MMM yy' }
+                    },
+                    grid: { display: false },
+                    ticks: { maxTicksLimit: 4, font: { size: 9 }, color: '#999' }
+                },
+                y: {
+                    grid: { color: 'rgba(0,0,0,0.04)' },
+                    ticks: { maxTicksLimit: 3, font: { size: 9 }, color: '#999' }
+                }
+            }
+        }
+    });
+})();
+{% endif %}
+{% endfor %}
+</script>
+{% endif %}
 {% endblock %}

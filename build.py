@@ -403,13 +403,44 @@ def calculate_government_scorecard_detailed(D, jurisdiction, government_index, i
                                 status, status_icon = 'No Change', '−'
                                 amber_count += 1
 
+                        # Build time-series data for mini charts
+                        y_field = graph_config['y']
+                        this_gov_data = []
+                        for row in full_data['data']:
+                            d = row['date']
+                            if d >= gov['date']:
+                                if next_gov and d >= next_gov['date']:
+                                    break
+                                val = row.get(y_field)
+                                if val not in (None, ''):
+                                    try:
+                                        this_gov_data.append({'date': str(d), 'value': float(val)})
+                                    except (ValueError, TypeError):
+                                        pass
+
+                        prev_gov_data = []
+                        if government_index > 0:
+                            prev_gov_entry = governments[government_index - 1]
+                            for row in full_data['data']:
+                                d = row['date']
+                                if d >= prev_gov_entry['date'] and d < gov['date']:
+                                    val = row.get(y_field)
+                                    if val not in (None, ''):
+                                        try:
+                                            prev_gov_data.append({'date': str(d), 'value': float(val)})
+                                        except (ValueError, TypeError):
+                                            pass
+
                         scorecard_data = {
                             'start_value': start_value,
                             'end_value': end_value,
                             'change': change,
                             'change_pct': change_pct,
                             'status': status,
-                            'status_icon': status_icon
+                            'status_icon': status_icon,
+                            'direction': direction,
+                            'this_gov_data': this_gov_data,
+                            'prev_gov_data': prev_gov_data,
                         }
 
                     if scorecard_data:

@@ -2,7 +2,7 @@ title: Personal Savings Rate
 category: Economy
 frequency: Month
 source: https://fred.stlouisfed.org/series/PSAVERT
-last_updated: 2025-12-31
+last_updated: 2026-01-31
 description: This indicator tracks the personal saving rate as a percentage of disposable personal income. The 'value' field represents the percentage of after-tax income that households save rather than spend. A higher savings rate indicates financial security and the ability to build wealth, while a declining rate can signal financial stress, where households must spend all or most of their income just to maintain their lifestyle. This is a key indicator of household economic health and resilience. Data is calculated monthly by the Bureau of Economic Analysis.
 schema:
   date: The date of the measurement (end of month)
