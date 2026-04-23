@@ -2,7 +2,7 @@ title: Unemployment Rate
 category: Employment
 frequency: Month
 source: https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia
-last_updated: 2026-01-31
+last_updated: 2026-03-31
 description: This indicator tracks Australia's unemployment rate, which measures the percentage of people in the labour force who are actively seeking work but unable to find employment. The unemployment rate is a key indicator of economic health and labour market conditions. The 'value' field represents the seasonally adjusted unemployment rate as a percentage of the labour force.
 schema:
   date: The last day of the month for the unemployment measurement
