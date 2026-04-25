@@ -3,6 +3,7 @@ category: Employment
 frequency: Quarter
 source: https://www.statssa.gov.za/
 last_updated: 2025-12-31
+collector: collectors/sa_unemployment.py
 description: This indicator tracks the official unemployment rate for South Africa as published by Statistics South Africa (StatsSA). The unemployment rate represents the percentage of the labor force that is unemployed and actively seeking employment. StatsSA conducts a Quarterly Labour Force Survey (QLFS), first launched in January 2008, specifically designed to measure the dynamics of the South African labour market. The 'value' field represents the unemployment rate as a percentage of the labor force.
 schema:
   date: The date of the unemployment measurement (end of quarter)

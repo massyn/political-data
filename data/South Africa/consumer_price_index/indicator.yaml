@@ -3,6 +3,7 @@ category: Cost of Living
 frequency: Quarter
 source: https://www.statssa.gov.za/?page_id=1871
 last_updated: 2026-03-31
+collector: collectors/sa_cpi.py
 description: This indicator tracks the Consumer Price Index (CPI) for South Africa, measuring changes in the cost of living over time. The 'value' field represents the year-over-year inflation rate as a percentage (e.g., 5.2% means prices rose 5.2% compared to the same quarter last year). The 'index' field is the absolute CPI index value, allowing for long-term price comparisons. Statistics South Africa (StatsSA) maintains a CPI Historical Table Archive with comprehensive historical data.
 schema:
   date: The date of the CPI measurement (end of quarter)
