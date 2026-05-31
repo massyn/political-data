@@ -1,564 +1,318 @@
+"""
+build.py — static site generator for the data indicator schema.
+
+Usage:
+    python build.py           # builds to ./dist
+    python build.py ./out     # builds to ./out
+"""
+
+from __future__ import annotations
+
+import json
 import os
-import logging
+import sys
+from collections import defaultdict
+from datetime import date
+from pathlib import Path
+
 import jinja2
-import markdown
-import shutil
-from data import Data
 
-def calculate_scorecard(indicator_data, overlay_data, y_field, direction):
-    """Calculate government performance scorecard"""
-    if not overlay_data or not direction:
-        return []
+from update import Indicator
 
-    governments = overlay_data['data']
-    scorecard = []
+OUTPUT_DIR = sys.argv[1] if len(sys.argv) > 1 else "./dist"
+TEMPLATE_DIR = "templates"
+CHART_YEARS = 25
 
-    # Process governments in reverse (most recent first), up to 5
-    for i in range(len(governments) - 1, -1, -1):
-        if len(scorecard) >= 5:
-            break
 
-        gov = governments[i]
-        next_gov = governments[i + 1] if i + 1 < len(governments) else None
+# ── helpers ───────────────────────────────────────────────────────────────────
 
-        # Find start value (first data point >= government start)
-        start_value = None
-        for row in indicator_data:
-            if row['date'] >= gov['date']:
-                try:
-                    start_value = float(row[y_field])
-                    break
-                except (ValueError, KeyError):
-                    pass
+def _cutoff() -> str:
+    today = date.today()
+    return f"{today.year - CHART_YEARS}-{today.month:02d}-{today.day:02d}"
 
-        # Find end value (last data point < next government, or latest)
-        end_value = None
-        if next_gov:
-            for row in reversed(indicator_data):
-                if row['date'] < next_gov['date']:
-                    try:
-                        end_value = float(row[y_field])
-                        break
-                    except (ValueError, KeyError):
-                        pass
-        else:
-            try:
-                end_value = float(indicator_data[-1][y_field])
-            except (ValueError, KeyError):
-                pass
 
-        # Only include if we have both values
-        if start_value is not None and end_value is not None:
-            change = end_value - start_value
-            change_pct = (change / start_value * 100) if start_value != 0 else 0
-
-            # Determine status based on direction
-            if direction == 'higher_is_better':
-                if change > 0.01:
-                    status, status_class, status_icon = 'Improved', 'table-success', '▲'
-                elif change < -0.01:
-                    status, status_class, status_icon = 'Worsened', 'table-danger', '▼'
-                else:
-                    status, status_class, status_icon = 'No Change', 'table-warning', '−'
-            else:  # lower_is_better
-                if change < -0.01:
-                    status, status_class, status_icon = 'Improved', 'table-success', '▼'
-                elif change > 0.01:
-                    status, status_class, status_icon = 'Worsened', 'table-danger', '▲'
-                else:
-                    status, status_class, status_icon = 'No Change', 'table-warning', '−'
-
-            scorecard.append({
-                'name': gov['value'],
-                'party': gov['party'],
-                'colour': gov['colour'],
-                'date': gov['date'],
-                'start_value': start_value,
-                'end_value': end_value,
-                'change': change,
-                'change_pct': change_pct,
-                'status': status,
-                'status_class': status_class,
-                'status_icon': status_icon
-            })
-
-    return scorecard
-
-def render_jinja(template,output,**KW):
-    os.makedirs(os.path.dirname(output),exist_ok = True)
-    template_dir = 'templates'
-    env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
-    tmpl = env.get_template(template)
-    result = tmpl.render(**KW)
-    print(f"Writing {output}")
-    with open(output,'wt',encoding='utf-8') as q:
-        q.write(result)
-
-def render_markdown_page(md_file, output_file, page_id, page_title):
-    """Read markdown file, convert to HTML, and render using page template"""
-    with open(md_file, 'r', encoding='utf-8') as f:
-        md_content = f.read()
-
-    # Convert markdown to HTML
-    html_content = markdown.markdown(md_content, extensions=['extra', 'codehilite', 'tables'])
-
-    # Render using the page template
-    render_jinja('page.jinja', output_file,
-                 content=html_content,
-                 page_id=page_id,
-                 page_title=page_title)
-
-def calculate_government_rag(indicator_data, gov, next_gov, y_field, direction):
-    """Calculate RAG status for a specific government period"""
-    if not indicator_data or not direction:
-        return None
-
-    # Find start value (first data point >= government start)
-    start_value = None
-    for row in indicator_data:
-        if row['date'] >= gov['date']:
-            try:
-                start_value = float(row[y_field])
-                break
-            except (ValueError, KeyError):
-                pass
-
-    # Find end value (last data point < next government, or latest)
-    end_value = None
-    if next_gov:
-        for row in reversed(indicator_data):
-            if row['date'] < next_gov['date']:
-                try:
-                    end_value = float(row[y_field])
-                    break
-                except (ValueError, KeyError):
-                    pass
+def _sparkline(values: list[float], width: int = 140, height: int = 36) -> str:
+    if len(values) < 2:
+        return ""
+    mn, mx = min(values), max(values)
+    pad = 2
+    if mx == mn:
+        mid = height / 2
+        pts = f"0,{mid:.0f} {width},{mid:.0f}"
     else:
-        try:
-            end_value = float(indicator_data[-1][y_field])
-        except (ValueError, KeyError):
-            pass
+        n = len(values) - 1
+        pts = " ".join(
+            f"{i / n * width:.1f},{pad + (1 - (v - mn) / (mx - mn)) * (height - 2 * pad):.1f}"
+            for i, v in enumerate(values)
+        )
+    return (
+        f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        f'<polyline points="{pts}" fill="none" stroke="#3498db" stroke-width="1.5" '
+        f'stroke-linejoin="round" stroke-linecap="round"/></svg>'
+    )
 
-    if start_value is None or end_value is None:
+
+def _rag(values: list[float], direction: str) -> str:
+    """'good', 'bad', or '' comparing latest value to ~12 data points ago."""
+    if not direction or len(values) < 2:
+        return ""
+    lookback = min(12, len(values) - 1)
+    delta = values[-1] - values[-lookback - 1]
+    if abs(delta) < 1e-9:
+        return ""
+    if direction == "lower_is_better":
+        return "good" if delta < 0 else "bad"
+    if direction == "higher_is_better":
+        return "good" if delta > 0 else "bad"
+    return ""
+
+
+def _chart_series(graph: dict, cutoff: str) -> list[dict]:
+    """[{x, y}] for Chart.js, limited to dates >= cutoff."""
+    return [
+        {"x": d, "y": v}
+        for d, v in sorted(graph.get("data", {}).items())
+        if d >= cutoff
+    ]
+
+
+def _overlay_all(overlay_ind: Indicator) -> list[dict]:
+    """All overlay entries with no date filter — used for performance calculations."""
+    if not overlay_ind.graphs:
+        return []
+    data = overlay_ind.graphs[0].get("data", {})
+    return [
+        {"date": d, "value": v["value"], "party": v["party"], "colour": v["colour"]}
+        for d, v in sorted(data.items())
+    ]
+
+
+def _overlay_windowed(overlay_ind: Indicator, cutoff: str) -> list[dict]:
+    """Overlay entries whose term overlaps with the chart window — used for chart display."""
+    entries = _overlay_all(overlay_ind)
+    result = []
+    for i, e in enumerate(entries):
+        next_d = entries[i + 1]["date"] if i + 1 < len(entries) else None
+        if next_d is None or next_d > cutoff:
+            result.append(e)
+    return result
+
+
+def _gov_performance(graph: dict, overlay: list[dict]) -> list[dict] | None:
+    """
+    For each government in overlay, calculate the delta (end - start) of the
+    graph's metric during their term. Returns a list suitable for a bar chart,
+    or None if direction is not set.
+    """
+    direction = graph.get("direction")
+    if not direction or not overlay:
         return None
 
-    change = end_value - start_value
+    data = sorted(
+        [(d, v) for d, v in graph.get("data", {}).items() if isinstance(v, (int, float))]
+    )
+    if not data:
+        return None
 
-    # Determine status based on direction
-    if direction == 'higher_is_better':
-        if change > 0.01:
-            status = 'Improved'
-        elif change < -0.01:
-            status = 'Worsened'
+    result = []
+    for i, gov in enumerate(overlay):
+        next_gov = overlay[i + 1] if i + 1 < len(overlay) else None
+
+        start_val = next((v for d, v in data if d >= gov["date"]), None)
+        if next_gov:
+            end_val = next((v for d, v in reversed(data) if d < next_gov["date"]), None)
         else:
-            status = 'No Change'
-    else:  # lower_is_better
-        if change < -0.01:
-            status = 'Improved'
-        elif change > 0.01:
-            status = 'Worsened'
+            end_val = data[-1][1]
+
+        if start_val is None or end_val is None:
+            continue
+
+        delta = end_val - start_val
+        if abs(delta) < 1e-9:
+            rag = "neutral"
+        elif direction == "lower_is_better":
+            rag = "good" if delta < 0 else "bad"
         else:
-            status = 'No Change'
+            rag = "good" if delta > 0 else "bad"
 
-    return status
-
-def calculate_current_government_rag(indicator_data, overlay_data, y_field, direction):
-    """Calculate RAG status for current government"""
-    if not overlay_data or not direction or not indicator_data:
-        return None
-
-    # Get current government (last one in the list)
-    current_gov = overlay_data['data'][-1]
-
-    # Find start value (first data point >= government start)
-    start_value = None
-    for row in indicator_data:
-        if row['date'] >= current_gov['date']:
-            try:
-                start_value = float(row[y_field])
-                break
-            except (ValueError, KeyError):
-                pass
-
-    # Get latest value
-    end_value = None
-    try:
-        end_value = float(indicator_data[-1][y_field])
-    except (ValueError, KeyError):
-        pass
-
-    if start_value is None or end_value is None:
-        return None
-
-    change = end_value - start_value
-    change_pct = (change / start_value * 100) if start_value != 0 else 0
-
-    # Determine status based on direction
-    if direction == 'higher_is_better':
-        if change > 0.01:
-            status, status_icon = 'Improved', '▲'
-        elif change < -0.01:
-            status, status_icon = 'Worsened', '▼'
-        else:
-            status, status_icon = 'No Change', '−'
-    else:  # lower_is_better
-        if change < -0.01:
-            status, status_icon = 'Improved', '▼'
-        elif change > 0.01:
-            status, status_icon = 'Worsened', '▲'
-        else:
-            status, status_icon = 'No Change', '−'
-
-    return {
-        'status': status,
-        'status_icon': status_icon,
-        'change': change,
-        'change_pct': change_pct,
-        'government': current_gov['value']
-    }
-
-def calculate_government_scorecard_summary(D, jurisdiction, indicators):
-    """Calculate summary scorecard for last 5 governments"""
-    # Find the government leader indicator (category=Government, graph=False)
-    gov_leader_id = None
-    for indicator in indicators:
-        if indicator.get('category') == 'Government' and indicator.get('graph') == False:
-            gov_leader_id = indicator['id']
-            break
-
-    if not gov_leader_id:
-        return None
-
-    # Get government leader data (prime_minister, president, etc.)
-    pm_data = D.result(jurisdiction, gov_leader_id, is_latest=False)
-    if not pm_data or not pm_data.get('data'):
-        return None
-
-    governments = pm_data['data']
-    scorecard = []
-
-    # Process last 5 governments in reverse (most recent first)
-    for i in range(len(governments) - 1, max(-1, len(governments) - 6), -1):
-        gov = governments[i]
-        next_gov = governments[i + 1] if i + 1 < len(governments) else None
-
-        green_count = 0
-        amber_count = 0
-        red_count = 0
-        missing_count = 0
-
-        # Check each indicator
-        for indicator in indicators:
-            if indicator.get('graph') and indicator['graph'] != False:
-                for graph_config in indicator['graph']:
-                    if 'direction' in graph_config and 'overlay_metric' in graph_config:
-                        # Get full indicator data
-                        full_data = D.result(jurisdiction, indicator['id'], is_latest=False)
-
-                        status = calculate_government_rag(
-                            full_data['data'],
-                            gov,
-                            next_gov,
-                            graph_config['y'],
-                            graph_config['direction']
-                        )
-
-                        if status == 'Improved':
-                            green_count += 1
-                        elif status == 'Worsened':
-                            red_count += 1
-                        elif status == 'No Change':
-                            amber_count += 1
-                        elif status is None:
-                            missing_count += 1
-
-                        break  # Only process first graph config with direction
-
-        # Calculate net score (improved - worsened)
-        net_score = green_count - red_count
-
-        scorecard.append({
-            'id': str(i),  # Government index for URL generation
-            'name': gov['value'],
-            'party': gov['party'],
-            'colour': gov['colour'],
-            'date': gov['date'],
-            'green': green_count,
-            'amber': amber_count,
-            'red': red_count,
-            'missing': missing_count,
-            'total': green_count + amber_count + red_count,
-            'score': net_score
+        # Surname only for compact bar labels
+        surname = gov["value"].split()[-1]
+        result.append({
+            "label":     surname,
+            "full_name": gov["value"],
+            "party":     gov["party"],
+            "colour":    gov["colour"],
+            "delta":     round(delta, 4),
+            "rag":       rag,
         })
 
-    return scorecard
+    return result or None
 
-def calculate_government_scorecard_detailed(D, jurisdiction, government_index, indicators):
-    """Calculate detailed scorecard for a specific government showing all indicators"""
-    # Find the government leader indicator (category=Government, graph=False)
-    gov_leader_id = None
-    for indicator in indicators:
-        if indicator.get('category') == 'Government' and indicator.get('graph') == False:
-            gov_leader_id = indicator['id']
-            break
 
-    if not gov_leader_id:
-        return None, None
+def _table_data(ind: Indicator) -> tuple[list[str], list[list]]:
+    """
+    (headers, rows) for the data table, most recent first.
+    Each value cell is a dict {value, rag} where rag is 'good'/'bad'/'' based
+    on the change from the previous period and the graph's direction.
+    """
+    cg = ind.chart_graphs
+    if not cg:
+        return [], []
 
-    # Get government leader data (prime_minister, president, etc.)
-    pm_data = D.result(jurisdiction, gov_leader_id, is_latest=False)
-    if not pm_data or not pm_data.get('data'):
-        return None, None
+    directions = [g.get("direction", "") for g in cg]
+    all_dates = sorted(
+        set().union(*(set(g.get("data", {}).keys()) for g in cg))
+    )  # ascending for delta calc
 
-    governments = pm_data['data']
+    # Build rows ascending first so we can compute deltas
+    asc_rows = []
+    for d in all_dates:
+        cells = []
+        for g in cg:
+            v = g.get("data", {}).get(d)
+            cells.append(v)
+        asc_rows.append((d, cells))
 
-    # Check if government_index is valid
-    if government_index < 0 or government_index >= len(governments):
-        return None, None
+    # Now reverse for display and attach RAG based on delta vs previous row
+    headers = ["Date"] + [g.get("y", f"Series {i + 1}") for i, g in enumerate(cg)]
+    rows = []
+    for row_i, (d, cells) in enumerate(reversed(asc_rows)):
+        orig_i = len(asc_rows) - 1 - row_i
+        display_cells = [d]
+        for col_i, v in enumerate(cells):
+            rag = ""
+            if v is not None and orig_i > 0:
+                prev_v = asc_rows[orig_i - 1][1][col_i]
+                if prev_v is not None and isinstance(v, (int, float)) and isinstance(prev_v, (int, float)):
+                    delta = v - prev_v
+                    direction = directions[col_i]
+                    if abs(delta) > 1e-9 and direction:
+                        if direction == "lower_is_better":
+                            rag = "good" if delta < 0 else "bad"
+                        elif direction == "higher_is_better":
+                            rag = "good" if delta > 0 else "bad"
+            display_cells.append({"value": v if v is not None else "", "rag": rag})
+        rows.append(display_cells)
 
-    gov = governments[government_index]
-    next_gov = governments[government_index + 1] if government_index + 1 < len(governments) else None
+    return headers, rows
 
-    # Prepare government info with end_date
-    government_info = {
-        'id': str(government_index),
-        'name': gov['value'],
-        'party': gov['party'],
-        'colour': gov['colour'],
-        'date': gov['date'],
-        'end_date': next_gov['date'] if next_gov else None
-    }
 
-    # Calculate performance for each indicator
-    indicators_with_scorecard = []
-    green_count = 0
-    amber_count = 0
-    red_count = 0
-    missing_count = 0
+# ── Jinja2 ────────────────────────────────────────────────────────────────────
 
-    for indicator in indicators:
-        indicator_data = indicator.copy()
+def _env() -> jinja2.Environment:
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(TEMPLATE_DIR),
+        autoescape=jinja2.select_autoescape(["html"]),
+    )
+    env.filters["tojson"] = lambda v: json.dumps(v, default=str)
+    return env
 
-        # Check if indicator has direction (can be scored)
-        if indicator.get('graph') and indicator['graph'] != False:
-            for graph_config in indicator['graph']:
-                if 'direction' in graph_config and 'overlay_metric' in graph_config:
-                    # Get full indicator data
-                    full_data = D.result(jurisdiction, indicator['id'], is_latest=False)
 
-                    # Calculate performance for this government
-                    scorecard_data = None
+def _render(env: jinja2.Environment, template: str, path: str, **ctx) -> None:
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    out = env.get_template(template).render(**ctx)
+    Path(path).write_text(out, encoding="utf-8")
+    print(f"  {path}")
 
-                    # Find start value (first data point >= government start)
-                    start_value = None
-                    for row in full_data['data']:
-                        if row['date'] >= gov['date']:
-                            try:
-                                start_value = float(row[graph_config['y']])
-                                break
-                            except (ValueError, KeyError):
-                                pass
 
-                    # Find end value (last data point < next government, or latest)
-                    end_value = None
-                    if next_gov:
-                        for row in reversed(full_data['data']):
-                            if row['date'] < next_gov['date']:
-                                try:
-                                    end_value = float(row[graph_config['y']])
-                                    break
-                                except (ValueError, KeyError):
-                                    pass
-                    else:
-                        try:
-                            end_value = float(full_data['data'][-1][graph_config['y']])
-                        except (ValueError, KeyError):
-                            pass
+# ── main ──────────────────────────────────────────────────────────────────────
 
-                    # Only include if we have both values
-                    if start_value is not None and end_value is not None:
-                        change = end_value - start_value
-                        change_pct = (change / start_value * 100) if start_value != 0 else 0
+def main() -> None:
+    env = _env()
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    cutoff = _cutoff()
 
-                        # Determine status based on direction
-                        direction = graph_config['direction']
-                        if direction == 'higher_is_better':
-                            if change > 0.01:
-                                status, status_icon = 'Improved', '▲'
-                                green_count += 1
-                            elif change < -0.01:
-                                status, status_icon = 'Worsened', '▼'
-                                red_count += 1
-                            else:
-                                status, status_icon = 'No Change', '−'
-                                amber_count += 1
-                        else:  # lower_is_better
-                            if change < -0.01:
-                                status, status_icon = 'Improved', '▼'
-                                green_count += 1
-                            elif change > 0.01:
-                                status, status_icon = 'Worsened', '▲'
-                                red_count += 1
-                            else:
-                                status, status_icon = 'No Change', '−'
-                                amber_count += 1
+    all_indicators: list[Indicator] = [
+        Indicator(p) for p in sorted(Path("data").glob("*.yaml"))
+    ]
+    by_id: dict[str, Indicator] = {ind.id: ind for ind in all_indicators}
 
-                        # Build time-series data for mini charts
-                        y_field = graph_config['y']
-                        this_gov_data = []
-                        for row in full_data['data']:
-                            d = row['date']
-                            if d >= gov['date']:
-                                if next_gov and d >= next_gov['date']:
-                                    break
-                                val = row.get(y_field)
-                                if val not in (None, ''):
-                                    try:
-                                        this_gov_data.append({'date': str(d), 'value': float(val)})
-                                    except (ValueError, TypeError):
-                                        pass
+    chart_indicators = [ind for ind in all_indicators if not ind.is_overlay]
 
-                        prev_gov_data = []
-                        if government_index > 0:
-                            prev_gov_entry = governments[government_index - 1]
-                            for row in full_data['data']:
-                                d = row['date']
-                                if d >= prev_gov_entry['date'] and d < gov['date']:
-                                    val = row.get(y_field)
-                                    if val not in (None, ''):
-                                        try:
-                                            prev_gov_data.append({'date': str(d), 'value': float(val)})
-                                        except (ValueError, TypeError):
-                                            pass
+    by_jurisdiction: dict[str, list[Indicator]] = defaultdict(list)
+    for ind in chart_indicators:
+        by_jurisdiction[ind.jurisdiction].append(ind)
 
-                        scorecard_data = {
-                            'start_value': start_value,
-                            'end_value': end_value,
-                            'change': change,
-                            'change_pct': change_pct,
-                            'status': status,
-                            'status_icon': status_icon,
-                            'direction': direction,
-                            'this_gov_data': this_gov_data,
-                            'prev_gov_data': prev_gov_data,
-                        }
+    # ── Home page ─────────────────────────────────────────────────────────────
+    _render(env, "index.jinja", f"{OUTPUT_DIR}/index.html",
+            jurisdictions=sorted(by_jurisdiction.keys()),
+            page_id="index")
 
-                    if scorecard_data:
-                        indicator_data['scorecard_data'] = scorecard_data
-                    else:
-                        # Data is missing for this indicator during this government
-                        missing_count += 1
+    # ── Per-jurisdiction pages ────────────────────────────────────────────────
+    for jurisdiction, inds in sorted(by_jurisdiction.items()):
+        slug = jurisdiction.lower().replace(" ", "_")
 
-                    break  # Only process first graph config with direction
+        by_cat: dict[str, list[dict]] = defaultdict(list)
+        for ind in sorted(inds, key=lambda i: i.title):
+            cg = ind.chart_graphs
+            if not cg:
+                continue
+            direction = cg[0].get("direction", "")
+            sorted_data = sorted(cg[0].get("data", {}).items())
+            values = [v for _, v in sorted_data if isinstance(v, (int, float))]
+            latest_date = sorted_data[-1][0] if sorted_data else None
+            latest_val  = sorted_data[-1][1] if sorted_data else None
 
-        indicators_with_scorecard.append(indicator_data)
+            by_cat[ind.category].append({
+                "id":           ind.id,
+                "title":        ind.title,
+                "url":          f"{slug}_{ind.id}.html",
+                "sparkline":    _sparkline(values),
+                "rag":          _rag(values, direction),
+                "latest_value": latest_val,
+                "latest_date":  latest_date,
+                "y_label":      cg[0].get("y", ""),
+            })
 
-    # Add summary counts to government info
-    government_info['green'] = green_count
-    government_info['amber'] = amber_count
-    government_info['red'] = red_count
-    government_info['missing'] = missing_count
-    government_info['score'] = green_count - red_count
+        _render(env, "jurisdiction.jinja", f"{OUTPUT_DIR}/{slug}.html",
+                jurisdiction=jurisdiction,
+                slug=slug,
+                categories=dict(sorted(by_cat.items())),
+                page_id="jurisdiction")
 
-    return government_info, indicators_with_scorecard
+        # ── Indicator detail pages ─────────────────────────────────────────────
+        for ind in inds:
+            cg = ind.chart_graphs
+            if not cg:
+                continue
 
-def main(target):
-    D = Data()
-    os.makedirs(target,exist_ok=True)
+            graphs: list[dict] = []
+            overlays: dict[str, list[dict]] = {}
 
-    # Create flags directory and copy flag images
-    flags_dir = os.path.join(target, 'flags')
-    os.makedirs(flags_dir, exist_ok=True)
+            for graph in cg:
+                overlay_id = graph.get("overlay_metric")
 
-    for j in D.jurisdictions():
-        flag_source = os.path.join('data', j, 'flag.jpg')
-        flag_dest = os.path.join(flags_dir, f'{j}.jpg')
-        if os.path.exists(flag_source):
-            shutil.copy2(flag_source, flag_dest)
-            print(f"Copied flag: {flag_source} -> {flag_dest}")
-        else:
-            print(f"Warning: Flag not found for {j} at {flag_source}")
+                # Windowed overlay for chart display
+                if overlay_id and overlay_id in by_id and overlay_id not in overlays:
+                    overlays[overlay_id] = _overlay_windowed(by_id[overlay_id], cutoff)
 
-    # Render the static markdown pages
-    render_markdown_page('pages/about.md', f'{target}/about.html', 'about', 'About')
+                # Full overlay for government performance bars
+                gov_perf = None
+                if overlay_id and overlay_id in by_id and graph.get("direction"):
+                    gov_perf = _gov_performance(graph, _overlay_all(by_id[overlay_id]))
 
-    # Render the index page
-    render_jinja('index.jinja', f'{target}/index.html', jurisdictions = D.jurisdictions())
+                graphs.append({
+                    "title":       graph.get("title", ""),
+                    "y_label":     graph.get("y", ""),
+                    "direction":   graph.get("direction", ""),
+                    "overlay_id":  overlay_id,
+                    "series":      _chart_series(graph, cutoff),
+                    "gov_perf":    gov_perf,
+                })
 
-    for j in D.jurisdictions():
-        # Prepare indicators with RAG status for current government
-        indicators_with_rag = []
-        for i in D.indicators(j):
-            indicator_data = i.copy()
+            table_headers, table_rows = _table_data(ind)
 
-            # Calculate current government RAG if indicator has direction
-            if i.get('graph') and i['graph'] != False:
-                for graph_config in i['graph']:
-                    if 'direction' in graph_config and 'overlay_metric' in graph_config:
-                        overlay_id = graph_config['overlay_metric']
-                        overlay_data = D.result(j, overlay_id, is_latest=False)
+            _render(env, "indicator.jinja",
+                    f"{OUTPUT_DIR}/{slug}_{ind.id}.html",
+                    jurisdiction=jurisdiction,
+                    slug=slug,
+                    ind=ind,
+                    graphs=graphs,
+                    overlays=overlays,
+                    table_headers=table_headers,
+                    table_rows=table_rows,
+                    page_id="indicator")
 
-                        # Get full indicator data
-                        full_data = D.result(j, i['id'], is_latest=False)
 
-                        rag = calculate_current_government_rag(
-                            full_data['data'],
-                            overlay_data,
-                            graph_config['y'],
-                            graph_config['direction']
-                        )
-
-                        if rag:
-                            indicator_data['rag'] = rag
-                        break
-
-            indicators_with_rag.append(indicator_data)
-
-        # Calculate government scorecard summary
-        government_scorecard = calculate_government_scorecard_summary(D, j, indicators_with_rag)
-
-        render_jinja('jurisdiction.jinja', f'{target}/{j.lower()}.html',
-                    jurisdiction = j, indicators = indicators_with_rag,
-                    government_scorecard = government_scorecard)
-
-        # Generate scorecard pages for each government
-        if government_scorecard:
-            for gov_summary in government_scorecard:
-                gov_index = int(gov_summary['id'])
-                government_info, indicators_for_gov = calculate_government_scorecard_detailed(
-                    D, j, gov_index, indicators_with_rag
-                )
-
-                if government_info and indicators_for_gov:
-                    render_jinja('scorecard.jinja', f"{target}/{j.lower()}_gov_{gov_summary['id']}.html",
-                                jurisdiction = j,
-                                government = government_info,
-                                indicators = indicators_for_gov)
-
-        for i in D.indicators(j):
-            res = D.result(j,i['id'],is_latest=False)
-
-            # Check if any graph has an overlay_metric and fetch that data
-            overlay_data = {}
-            scorecards = {}
-            if res['indicator'].get('graph') and res['indicator']['graph'] != False:
-                for graph_config in res['indicator']['graph']:
-                    if 'overlay_metric' in graph_config:
-                        overlay_id = graph_config['overlay_metric']
-                        if overlay_id not in overlay_data:
-                            overlay_data[overlay_id] = D.result(j, overlay_id, is_latest=False)
-
-                        # Calculate scorecard if direction is specified
-                        if 'direction' in graph_config and graph_config['y'] not in scorecards:
-                            scorecards[graph_config['y']] = calculate_scorecard(
-                                res['data'],
-                                overlay_data[overlay_id],
-                                graph_config['y'],
-                                graph_config['direction']
-                            )
-
-            render_jinja('indicator.jinja', f"{target}/{j.lower()}_{i['id'].lower()}.html",
-                        jurisdiction = j, indicator = res, overlay_data = overlay_data, scorecards = scorecards)
-
-if __name__ == '__main__':
-    main('./dist')
+if __name__ == "__main__":
+    main()

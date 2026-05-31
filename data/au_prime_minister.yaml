@@ -1,0 +1,206 @@
+id: au_prime_minister
+jurisdiction: Australia
+title: Prime Minister of Australia
+category: Government
+frequency: 3 Year
+source: https://results.aec.gov.au/
+last_updated: 2025-05-03
+description: >
+  Tracks who the Prime Minister of Australia is following each federal election.
+  Recorded at every election, even when the incumbent wins re-election, allowing
+  tracking of government continuity and change over time.
+graph:
+  - title: Prime Minister of Australia
+    data:
+      1901-03-29:
+        value: Edmund Barton
+        party: Protectionist
+        colour: "#8B4513"
+      1903-12-16:
+        value: Alfred Deakin
+        party: Protectionist
+        colour: "#8B4513"
+      1906-12-12:
+        value: Alfred Deakin
+        party: Protectionist
+        colour: "#8B4513"
+      1910-04-13:
+        value: Andrew Fisher
+        party: Labor
+        colour: "#E13940"
+      1913-05-31:
+        value: Joseph Cook
+        party: Liberal
+        colour: "#0047AB"
+      1914-09-05:
+        value: Andrew Fisher
+        party: Labor
+        colour: "#E13940"
+      1917-05-05:
+        value: Billy Hughes
+        party: Nationalist
+        colour: "#0047AB"
+      1919-12-13:
+        value: Billy Hughes
+        party: Nationalist
+        colour: "#0047AB"
+      1922-12-16:
+        value: Stanley Bruce
+        party: Nationalist
+        colour: "#0047AB"
+      1925-11-14:
+        value: Stanley Bruce
+        party: Nationalist
+        colour: "#0047AB"
+      1928-11-17:
+        value: Stanley Bruce
+        party: Nationalist
+        colour: "#0047AB"
+      1929-10-12:
+        value: James Scullin
+        party: Labor
+        colour: "#E13940"
+      1931-12-19:
+        value: Joseph Lyons
+        party: United Australia
+        colour: "#0047AB"
+      1934-09-15:
+        value: Joseph Lyons
+        party: United Australia
+        colour: "#0047AB"
+      1937-10-23:
+        value: Joseph Lyons
+        party: United Australia
+        colour: "#0047AB"
+      1940-09-21:
+        value: Robert Menzies
+        party: United Australia
+        colour: "#0047AB"
+      1943-08-21:
+        value: John Curtin
+        party: Labor
+        colour: "#E13940"
+      1946-09-28:
+        value: Ben Chifley
+        party: Labor
+        colour: "#E13940"
+      1949-12-10:
+        value: Robert Menzies
+        party: Liberal
+        colour: "#0047AB"
+      1951-04-28:
+        value: Robert Menzies
+        party: Liberal
+        colour: "#0047AB"
+      1954-05-29:
+        value: Robert Menzies
+        party: Liberal
+        colour: "#0047AB"
+      1955-12-10:
+        value: Robert Menzies
+        party: Liberal
+        colour: "#0047AB"
+      1958-11-22:
+        value: Robert Menzies
+        party: Liberal
+        colour: "#0047AB"
+      1961-12-09:
+        value: Robert Menzies
+        party: Liberal
+        colour: "#0047AB"
+      1963-11-30:
+        value: Robert Menzies
+        party: Liberal
+        colour: "#0047AB"
+      1966-11-26:
+        value: Harold Holt
+        party: Liberal
+        colour: "#0047AB"
+      1969-10-25:
+        value: John Gorton
+        party: Liberal
+        colour: "#0047AB"
+      1972-12-02:
+        value: Gough Whitlam
+        party: Labor
+        colour: "#E13940"
+      1974-05-18:
+        value: Gough Whitlam
+        party: Labor
+        colour: "#E13940"
+      1975-12-13:
+        value: Malcolm Fraser
+        party: Liberal
+        colour: "#0047AB"
+      1977-12-10:
+        value: Malcolm Fraser
+        party: Liberal
+        colour: "#0047AB"
+      1980-10-18:
+        value: Malcolm Fraser
+        party: Liberal
+        colour: "#0047AB"
+      1983-03-05:
+        value: Bob Hawke
+        party: Labor
+        colour: "#E13940"
+      1984-12-01:
+        value: Bob Hawke
+        party: Labor
+        colour: "#E13940"
+      1987-07-11:
+        value: Bob Hawke
+        party: Labor
+        colour: "#E13940"
+      1990-03-24:
+        value: Bob Hawke
+        party: Labor
+        colour: "#E13940"
+      1993-03-13:
+        value: Paul Keating
+        party: Labor
+        colour: "#E13940"
+      1996-03-02:
+        value: John Howard
+        party: Liberal
+        colour: "#0047AB"
+      1998-10-03:
+        value: John Howard
+        party: Liberal
+        colour: "#0047AB"
+      2001-11-10:
+        value: John Howard
+        party: Liberal
+        colour: "#0047AB"
+      2004-10-09:
+        value: John Howard
+        party: Liberal
+        colour: "#0047AB"
+      2007-11-24:
+        value: Kevin Rudd
+        party: Labor
+        colour: "#E13940"
+      2010-08-21:
+        value: Julia Gillard
+        party: Labor
+        colour: "#E13940"
+      2013-09-07:
+        value: Tony Abbott
+        party: Liberal
+        colour: "#0047AB"
+      2016-07-02:
+        value: Malcolm Turnbull
+        party: Liberal
+        colour: "#0047AB"
+      2019-05-18:
+        value: Scott Morrison
+        party: Liberal
+        colour: "#0047AB"
+      2022-05-21:
+        value: Anthony Albanese
+        party: Labor
+        colour: "#E13940"
+      2025-05-03:
+        value: Anthony Albanese
+        party: Labor
+        colour: "#E13940"

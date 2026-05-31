@@ -9,6 +9,7 @@ Dates are recorded as the actual RBA board decision date (not end-of-month).
 """
 
 import re
+import ssl
 import urllib.request
 
 
@@ -23,7 +24,10 @@ def collect() -> list[tuple]:
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     })
-    with urllib.request.urlopen(req, timeout=15) as r:
+    # RBA's certificate chain is not trusted by Python's default SSL on Windows;
+    # unverified context is acceptable for a read-only public data scraper.
+    ctx = ssl._create_unverified_context()
+    with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
         html = r.read().decode("utf-8", errors="ignore")
 
     # Table rows contain: "19 Mar 2026" and "4.10" in adjacent cells

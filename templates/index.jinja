@@ -1,45 +1,19 @@
 {% extends "base.jinja" %}
-
-{% block title %}{{ page_title }} - Political Data Dashboard{% endblock %}
+{% block title %}Political Data{% endblock %}
 
 {% block content %}
-<div class="my-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item active" aria-current="page">Home</li>
-        </ol>
-    </nav>
+<h1 class="fw-bold mb-1" style="font-size:1.75rem;">Jurisdictions</h1>
+<p class="text-muted mb-4">Select a jurisdiction to explore its indicators.</p>
 
-    <h1 class="mb-4">Select a Jurisdiction</h1>
-    <style>
-        .jurisdiction-card {
-            text-decoration: none;
-            color: inherit;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .jurisdiction-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-            text-decoration: none;
-            color: inherit;
-        }
-        .jurisdiction-card:hover .card-title {
-            color: #0d6efd;
-        }
-    </style>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-    {% for j in jurisdictions %}
-        <div class="col">
-            <a href="{{j|lower}}.html" class="jurisdiction-card">
-                <div class="card h-100 shadow-sm">
-                    <img src="flags/{{j}}.jpg" class="card-img-top" alt="{{j}} flag" style="height: 200px; object-fit: cover;">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ j }}</h5>
-                    </div>
-                </div>
-            </a>
-        </div>
-    {% endfor %}
-    </div>
+<div class="row g-3">
+  {% for j in jurisdictions %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <a href="{{ j.lower().replace(' ','_') }}.html" class="text-decoration-none">
+      <div class="card h-100 p-3 text-center">
+        <div class="fw-semibold" style="font-size:1.05rem;">{{ j }}</div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
 </div>
 {% endblock %}

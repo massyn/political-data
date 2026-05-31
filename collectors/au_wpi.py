@@ -1,12 +1,17 @@
-"""AU Wage Price Index (quarterly) — ABS WPI latest release HTML.
+"""AU Wage Price Index (quarterly, annual growth %) — ABS WPI latest release HTML.
 
 Source: https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/wage-price-index-australia/latest-release
 
-Returns (date, annual_growth_pct, index_value). Index uses 2008-09 = 100 base.
-Released approximately: February (Dec qtr), May (Mar qtr), August (Jun qtr), November (Sep qtr).
+Returns (date, annual_growth_pct). Index value is no longer published on the
+ABS summary page and must be updated manually from the full data download.
 
-FRAGILE: ABS page structure changes break this scraper. If it fails, visit the
-ABS page above and update data.csv manually.
+Page structure (as of 2026):
+  "Over the twelve months to the {Quarter} quarter, the WPI rose {X.X}%."
+  Quarter year appears elsewhere as "{Quarter} quarter {YYYY}" or
+  "{Quarter} quarter, {YYYY}".
+
+FRAGILE: ABS page wording changes break this scraper. If it fails, visit the
+ABS page above and update the YAML manually.
 """
 
 import re
@@ -27,28 +32,34 @@ def collect() -> list[tuple]:
     with urllib.request.urlopen(req, timeout=20) as r:
         html = r.read().decode("utf-8", errors="ignore")
 
-    # "rose 3.4% over the twelve months to the December quarter"
-    annual_m = re.search(r"(?:rose|increased|grew)[^<]{0,60}?(\d+\.?\d*)%[^<]{0,60}?twelve months", html, re.IGNORECASE)
-    qtr_m    = re.search(r"(march|june|september|december)\s+quarter[,\s]+(\d{4})", html, re.IGNORECASE)
-    idx_m    = re.search(r"index[^\d]{0,30}?(\d{3}\.\d)", html, re.IGNORECASE)
+    # Annual growth: "WPI rose 3.3%" — WPI is the anchor, not "twelve months"
+    annual_m = re.search(
+        r"WPI\s+(?:rose|increased|grew)\s+(\d+\.?\d*)%",
+        html, re.IGNORECASE,
+    )
+
+    # Quarter + year: "March quarter, 2026" or "March quarter 2026"
+    qtr_m = re.search(
+        r"(march|june|september|december)\s+quarter[,\s]+(\d{4})",
+        html, re.IGNORECASE,
+    )
 
     if not annual_m or not qtr_m:
         return []
 
     annual = annual_m.group(1)
-    qend   = _QUARTER_MAP.get(qtr_m.group(1).lower(), "")
-    year   = qtr_m.group(2)
-    index  = idx_m.group(1) if idx_m else ""
-
+    qend = _QUARTER_MAP.get(qtr_m.group(1).lower(), "")
+    year = qtr_m.group(2)
     if not qend:
         return []
-    return [(f"{year}-{qend}", annual, index)] if index else [(f"{year}-{qend}", annual, "")]
+
+    return [(f"{year}-{qend}", annual)]
 
 
 if __name__ == "__main__":
     rows = collect()
     if rows:
         for row in rows:
-            print("\t".join(r for r in row if r))
+            print("\t".join(str(v) for v in row))
     else:
         print("No data — check https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/wage-price-index-australia/latest-release")

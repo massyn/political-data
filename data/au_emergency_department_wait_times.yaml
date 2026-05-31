@@ -1,0 +1,31 @@
+id: au_emergency_department_wait_times
+jurisdiction: Australia
+title: Emergency Department Wait Times
+category: Health
+frequency: Annual
+source: https://www.aihw.gov.au/hospitals/topics/emergency-departments/time-spent-in-emergency
+last_updated: 2025-06-30
+description: >
+  Tracks emergency department performance across Australian public hospitals —
+  specifically the percentage of ED presentations completed (admitted, referred,
+  or discharged) within 4 hours. A key measure of ED efficiency and accessibility,
+  reported annually by AIHW. Date is the last day of the financial year (June 30).
+  Higher values are better.
+graph:
+  - x: date
+    y: Presentations completed within 4 hours (%)
+    title: ED Presentations Completed Within 4 Hours (%)
+    overlay_metric: au_prime_minister
+    direction: higher_is_better
+    data:
+      2015-06-30: 73
+      2016-06-30: 72
+      2017-06-30: 71
+      2018-06-30: 70
+      2019-06-30: 69
+      2020-06-30: 69
+      2021-06-30: 65
+      2022-06-30: 61
+      2023-06-30: 56
+      2024-06-30: 55
+      2025-06-30: 54

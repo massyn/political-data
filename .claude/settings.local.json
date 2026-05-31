@@ -39,7 +39,12 @@
       "Bash(sed -i 's/last_updated: 2025-09-30/last_updated: 2025-12-31/' \"/c/Users/philm/github/political-data/data/Australia/gdp_growth/indicator.yaml\")",
       "Bash(__NEW_LINE_459200f44ee94cc0__ echo:*)",
       "Bash(\"/c/Users/philm/github/political-data/data/Australia/median_house_price/data.csv\")",
-      "Bash(sed -i 's/last_updated: 2025-09-30/last_updated: 2025-12-31/' \"/c/Users/philm/github/political-data/data/Australia/median_house_price/indicator.yaml\")"
+      "Bash(sed -i 's/last_updated: 2025-09-30/last_updated: 2025-12-31/' \"/c/Users/philm/github/political-data/data/Australia/median_house_price/indicator.yaml\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\philm\\\\github\\\\political-data\\\\data\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(dir C:\\\\Users\\\\philm\\\\github\\\\political-data *)",
+      "Bash(dir \"C:\\\\Users\\\\philm\\\\github\\\\political-data\\\\templates\" /b)",
+      "Bash(dir \"C:\\\\Users\\\\philm\\\\github\\\\political-data\\\\pages\" /b)"
     ],
     "deny": [],
     "ask": []

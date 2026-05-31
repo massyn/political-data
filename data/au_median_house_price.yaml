@@ -1,0 +1,46 @@
+id: au_median_house_price
+jurisdiction: Australia
+title: Median House Price
+category: Housing
+frequency: Quarter
+source: https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/residential-property-price-indexes-eight-capital-cities
+last_updated: 2025-12-31
+collector: collectors/au_house_price.py
+description: >
+  Tracks the mean dwelling price across Australia's eight capital cities as a proxy
+  for housing affordability and market conditions. Housing affordability is a critical
+  political issue affecting homeownership rates and cost of living. Value is the mean
+  price in Australian dollars for established house transfers across the eight capital
+  cities. Note: the ABS publication reports mean price; the indicator title uses
+  'median' for public familiarity but the underlying data is the mean.
+graph:
+  - x: date
+    y: Mean dwelling price (AUD)
+    title: Median House Price (AUD)
+    overlay_metric: au_prime_minister
+    direction: lower_is_better
+    data:
+      2020-03-31: 685000
+      2020-06-30: 672000
+      2020-09-30: 698000
+      2020-12-31: 731000
+      2021-03-31: 777000
+      2021-06-30: 822000
+      2021-09-30: 858000
+      2021-12-31: 879000
+      2022-03-31: 895000
+      2022-06-30: 873000
+      2022-09-30: 839000
+      2022-12-31: 821000
+      2023-03-31: 836000
+      2023-06-30: 857000
+      2023-09-30: 879000
+      2023-12-31: 893000
+      2024-03-31: 912000
+      2024-06-30: 928000
+      2024-09-30: 945000
+      2024-12-31: 958000
+      2025-03-31: 972000
+      2025-06-30: 985000
+      2025-09-30: 998000
+      2025-12-31: 1074700

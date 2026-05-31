@@ -1,115 +1,41 @@
 {% extends "base.jinja" %}
+{% block title %}{{ jurisdiction }} — Political Data{% endblock %}
 
-{% block title %}{{ page_title }} - Political Data Dashboard{% endblock %}
+{% block extra_css %}
+<style>
+  .rag-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .rag-good { background: #16a34a; }
+  .rag-bad  { background: #dc2626; }
+  .rag-none { background: #d1d5db; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="my-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ jurisdiction }}</li>
-        </ol>
-    </nav>
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+    <li class="breadcrumb-item active">{{ jurisdiction }}</li>
+  </ol>
+</nav>
 
-    <h1 class="mb-4">{{ jurisdiction }}</h1>
+<h1 class="fw-bold mb-4" style="font-size:1.75rem;">{{ jurisdiction }}</h1>
 
-    {% if government_scorecard %}
-    <div class="content-card mb-4">
-        <h2 class="mb-3">Government Scorecard</h2>
-        <p class="text-muted mb-3">Performance summary of the last 5 governments across all tracked metrics</p>
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead>
-                    <tr>
-                        <th>Government</th>
-                        <th>Party</th>
-                        <th>Start Date</th>
-                        <th class="text-center" style="color: #28a745;">Improved</th>
-                        <th class="text-center" style="color: #ffc107;">No Change</th>
-                        <th class="text-center" style="color: #dc3545;">Worsened</th>
-                        <th class="text-center" style="color: #6c757d;">Missing</th>
-                        <th class="text-center">Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for gov in government_scorecard %}
-                    <tr onclick="window.location='{{ jurisdiction.lower() }}_gov_{{ gov.id }}.html';" style="cursor: pointer;">
-                        <td><strong>{{ gov.name }}</strong></td>
-                        <td><span class="badge" style="background-color: {{ gov.colour }};">{{ gov.party }}</span></td>
-                        <td>{{ gov.date }}</td>
-                        <td class="text-center"><strong style="color: #28a745; font-size: 1.2rem;">{{ gov.green }}</strong></td>
-                        <td class="text-center"><strong style="color: #ffc107; font-size: 1.2rem;">{{ gov.amber }}</strong></td>
-                        <td class="text-center"><strong style="color: #dc3545; font-size: 1.2rem;">{{ gov.red }}</strong></td>
-                        <td class="text-center"><strong style="color: #6c757d; font-size: 1.2rem;">{{ gov.missing }}</strong></td>
-                        <td class="text-center">
-                            <strong style="font-size: 1.3rem; color: {% if gov.score > 0 %}#28a745{% elif gov.score < 0 %}#dc3545{% else %}#ffc107{% endif %};">
-                                {{ "%+d"|format(gov.score) }}
-                            </strong>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
-
-    {% set categories = {} %}
-    {% for i in indicators %}
-        {% if i['category'] not in categories %}
-            {% set _ = categories.update({i['category']: []}) %}
-        {% endif %}
-        {% set _ = categories[i['category']].append(i) %}
-    {% endfor %}
-
-    <div class="content-card">
-        <h2 class="mb-4">Indicators</h2>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Indicator</th>
-                        <th>Latest Date</th>
-                        <th>Latest Value</th>
-                        <th>Performance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for category, category_indicators in categories.items()|sort %}
-                    {% for i in category_indicators|sort(attribute='title') %}
-                    <tr onclick="window.location='{{ jurisdiction.lower() }}_{{ i['id'].lower() }}.html';" style="cursor: pointer;">
-                        <td>{% if loop.first %}<strong>{{ category }}</strong>{% endif %}</td>
-                        <td>{{ i['title'] }}</td>
-                        {% if i['data'] and i['data']|length > 0 %}
-                        <td>{{ i['data'][0]['date'] }}</td>
-                        <td>
-                            {% for key, value in i['data'][0].items() %}
-                                {% if key != 'date' %}
-                                    <span class="me-3"><strong>{{ key|title }}:</strong> {{ value }}</span>
-                                {% endif %}
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% if i.get('rag') %}
-                            <span style="font-size: 1.5rem; color: {% if i.rag.status == 'Improved' %}#28a745{% elif i.rag.status == 'Worsened' %}#dc3545{% else %}#ffc107{% endif %};">
-                                <strong>{{ i.rag.status_icon }}</strong>
-                            </span>
-                            <span class="ms-2">{{ "%+.2f"|format(i.rag.change) }} ({{ "%+.1f"|format(i.rag.change_pct) }}%)</span>
-                            {% else %}
-                            <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        {% else %}
-                        <td colspan="3" class="text-muted">No data available</td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
+{% for category, rows in categories.items() %}
+<div class="card mb-3">
+  <div class="px-3 py-2 section-title">{{ category }}</div>
+  {% for row in rows %}
+  <a href="{{ row.url }}" class="metric-row">
+    <span class="metric-name">{{ row.title }}</span>
+    <span class="metric-spark">{{ row.sparkline | safe }}</span>
+    <span style="display:flex;align-items:center;width:14px;flex-shrink:0;">
+      <span class="rag-dot {% if row.rag == 'good' %}rag-good{% elif row.rag == 'bad' %}rag-bad{% else %}rag-none{% endif %}"></span>
+    </span>
+    <span class="metric-val">
+      {% if row.latest_value is not none %}{{ row.latest_value }}{% endif %}
+    </span>
+    <span class="metric-date">{{ row.latest_date or '' }}</span>
+  </a>
+  {% endfor %}
 </div>
+{% endfor %}
 {% endblock %}

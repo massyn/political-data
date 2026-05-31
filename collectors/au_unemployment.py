@@ -3,10 +3,13 @@
 Source: https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia/latest-release
 
 Scrapes the seasonally adjusted unemployment rate and reference month from the
-ABS Labour Force release page. Returns the most recent 1-2 months.
+ABS Labour Force release page.
 
-FRAGILE: ABS page structure changes break this scraper. If it fails, get the
-latest rate from the ABS page above and add a row manually to data.csv.
+Page structure (as of 2026): "In seasonally adjusted terms, in {Month} {Year}:
+the unemployment rate [increased/decreased/remained] ... to {X.X}%"
+
+FRAGILE: ABS page wording changes break this scraper. If it fails, get the
+latest rate from the ABS page above and add a row manually.
 """
 
 import calendar
@@ -34,22 +37,30 @@ def collect() -> list[tuple]:
     with urllib.request.urlopen(req, timeout=20) as r:
         html = r.read().decode("utf-8", errors="ignore")
 
-    # Find "unemployment rate [rose/fell/remained at] X.X% in [Month] [Year]"
-    pattern = r"unemployment rate[^<]{0,60}?(\d+\.\d+)%[^<]{0,60}?in\s+(\w+)\s+(\d{4})"
-    matches = re.findall(pattern, html, re.IGNORECASE)
-    rows = []
-    for rate, month_name, year in matches:
-        month = _MONTHS.get(month_name.lower())
-        if month:
-            rows.append((_month_end(int(year), month), rate))
-    rows = sorted(set(rows))
-    return rows[-2:] if rows else []
+    # Month/year: "in April 2026" in key statistics section
+    month_m = re.search(
+        r"\bin\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})",
+        html, re.IGNORECASE,
+    )
+
+    # Rate: "unemployment rate ... X.X%" — covers both "rose to X.X%" and "remained at X.X%"
+    rate_m = re.search(r"unemployment rate[^<]{0,150}?(\d+\.\d+)%", html, re.IGNORECASE)
+
+    if not month_m or not rate_m:
+        return []
+
+    month = _MONTHS.get(month_m.group(1).lower())
+    year = int(month_m.group(2))
+    if not month:
+        return []
+
+    return [(_month_end(year, month), rate_m.group(1))]
 
 
 if __name__ == "__main__":
     rows = collect()
     if rows:
         for row in rows:
-            print("\t".join(row))
+            print("\t".join(str(v) for v in row))
     else:
         print("No data — check https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia/latest-release")
