@@ -438,6 +438,33 @@ If `update.py` reports a collector error:
 
 The SA CPI collector approximates the index using `prior_year_index × (1 + rate/100)` because StatsSA uses a different base period (Dec 2016=100) from what Trading Economics reports (2021=100). The approximation drifts slightly each year. If accuracy matters, manually verify against the StatsSA CPI publication.
 
+### Current Live Data Coverage (as of 2026-07-27)
+
+**Only Australia is currently live in `data/`.** South Africa and United States indicators described elsewhere in this file are not present as `data/*.yaml` files — they exist only under `archive/data/`. Treat any SA/US instruction in this doc as aspirational until those indicators are restored to `data/`.
+
+The 8 live AU indicators: `au_cash_rate`, `au_consumer_price_index`, `au_emergency_department_wait_times`, `au_gdp_growth`, `au_median_house_price`, `au_prime_minister`, `au_unemployment_rate`, `au_wage_price_index`.
+
+### AI-Fetchable vs. Manual/Script-Only Sources
+
+When checking freshness or pulling a new value for an AU indicator, use this to decide how:
+
+| Source | AI-fetchable via WebFetch? | Notes |
+|--------|---------------------------|-------|
+| ABS release pages (`abs.gov.au/statistics/...`) | ✅ Yes | Renders fine via WebFetch. Use the specific quarter/month release URL (e.g. `.../mar-2026`), not just `/latest-release`, to get numbers rather than navigation links. |
+| RBA (`rba.gov.au/...`) | ❌ No — returns HTTP 403 | Both `rba.gov.au/statistics/cash-rate/` and `rba.gov.au/monetary-policy/int-rate-decisions/...` block WebFetch. Use `WebSearch` for meeting dates/rates instead (news coverage of RBA decisions is reliable and fast to find), or read the collector's raw fetch output if it still works. |
+| AIHW (`aihw.gov.au/...`) | ✅ Yes | Works via WebFetch. |
+| `collectors/au_cpi.py` (ABS CPI scraper) | ⚠️ Broken, do not trust | Currently returns garbage (wrong date, index value with no relation to the real series, e.g. `2024-09-30  4.0  611.6`). Get CPI manually via WebFetch on the ABS release page instead. |
+| `collectors/au_cash_rate.py` (RBA scraper) | ⚠️ Broken, do not trust | Returns 0.0/0.25 "delta-looking" values instead of actual rate levels, and duplicate/garbage dates. A past run of this collector had already polluted `data/au_cash_rate.yaml` with ~15 bogus rows (fixed 2026-07-27 — see below). Get the cash rate manually via `WebSearch` for the RBA decision instead of running this script. |
+| `collectors/au_gdp.py`, `au_wpi.py`, `au_house_price.py`, `au_unemployment.py` | ⚠️ Untested this session | Marked fragile in the reliability table above (ABS HTML scraping) — verify collector output against the ABS release page before trusting it, same as CPI/cash rate above. |
+
+**Rule of thumb:** for AU indicators, prefer fetching the ABS/AIHW release page directly with WebFetch and reading the number off the page over running the `collectors/au_*.py` scripts — the scripts are currently unreliable and at least one (`au_cash_rate.py`) has previously written bad data straight into a live file. If a collector's output doesn't match what WebFetch/WebSearch shows for the same period, don't append it — treat the collector as broken and fix it before using it again.
+
+### 2026-07-27 Data Fixes
+
+- **CPI**: added Mar 2026 quarter, YoY rate = 4.6% ([source](https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/mar-2026)). The index-value series (base 2011-12=100) was **not** extended — ABS has rebased CPI reporting to Sep 2025=100 and no longer publishes on the old base, so continuing that series requires an explicit decision (rebase historical series, approximate via chaining, or stop the series) rather than a routine update. Ask before resuming it.
+- **RBA cash rate**: removed ~15 corrupted rows (bogus 0.0/0.25 values at dates that didn't correspond to real decisions) left behind by a broken `au_cash_rate.py` run, and added the two real missing decisions: 2026-05-05 → 4.35% (third hike of the year), 2026-06-16 → 4.35% (hold).
+- **ED wait times**: confirmed current (2024–25 FY, last_updated 2025-06-30 is still AIHW's latest published period) — no change needed.
+
 ### Known Technical Limitations
 
 These have been hit before — don't repeat the same mistakes:
