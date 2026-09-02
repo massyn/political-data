@@ -4,7 +4,7 @@ title: Unemployment Rate
 category: Employment
 frequency: Month
 source: https://www.abs.gov.au/statistics/labour/employment-and-unemployment/labour-force-australia
-last_updated: 2026-06-30
+last_updated: 2026-07-31
 collector: collectors/au_unemployment.py
 description: 'Tracks Australia''s unemployment rate — the percentage of people in the labour force who are actively seeking
   work but unable to find employment. A key indicator of economic health and labour market conditions. Value is the seasonally
@@ -213,4 +213,7 @@ graph:
     2026-01-31: 4.1
     2026-02-28: 4.3
     2026-03-31: 4.3
+    2026-04-30: 4.5
+    2026-05-31: 4.4
     2026-06-30: 4.4
+    2026-07-31: 4.5

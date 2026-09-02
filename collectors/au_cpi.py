@@ -1,55 +1,74 @@
-"""AU Consumer Price Index (quarterly) — ABS CPI latest release HTML.
+"""AU Consumer Price Index (quarterly YoY) — ABS CPI latest release HTML.
 
 Source: https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/latest-release
 
-Returns (date, yoy_pct, index_value) for the most recent quarter.
+Returns (date, yoy_pct) for the most recent quarter-end month, where
 Q1 = March 31, Q2 = June 30, Q3 = September 30, Q4 = December 31.
 
-Index uses 2011-12 = 100 base period.
+The ABS now publishes a complete MONTHLY CPI. Its release page carries a
+"monthly and annual movement (%)" table of rows shaped "<Mon>-<YY> <monthly>
+<annual>". This collector reads that table, keeps the rows whose month is a
+quarter end, and emits the latest one so the existing quarterly series stays on
+a quarterly cadence.
+
+The CPI index-value series (the second graph in the indicator YAML, base
+2011-12 = 100) is deliberately NOT emitted: the ABS rebased monthly CPI
+reporting to September 2025 = 100 and no longer publishes on the old base, so
+extending that series needs an explicit decision. A two-element row leaves the
+index graph untouched (see Indicator.merge in update.py).
 
 FRAGILE: ABS page structure changes break this scraper. If it fails, visit the
-ABS page above and update data.csv manually. The quarterly CPI is released in
-late January, April, July, and October for the preceding quarter.
+ABS page above and read the annual movement for the latest quarter manually.
 """
 
-import calendar
 import re
 import urllib.request
 
+_URL = (
+    "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/"
+    "consumer-price-index-australia/latest-release"
+)
 
-_QUARTER_END = {1: "03-31", 2: "06-30", 3: "09-30", 4: "12-31"}
-_MONTHS_Q = {
-    "march": 1, "june": 2, "september": 3, "december": 4,
-    "mar": 1, "jun": 2, "sep": 3, "dec": 4,
+_MONTH_NUM = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
 }
+_QUARTER_END = {3: "03-31", 6: "06-30", 9: "09-30", 12: "12-31"}
 
 
 def collect() -> list[tuple]:
-    url = "https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/latest-release"
-    req = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-    })
+    req = urllib.request.Request(
+        _URL,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml",
+        },
+    )
     with urllib.request.urlopen(req, timeout=20) as r:
         html = r.read().decode("utf-8", errors="ignore")
 
-    # Find annual rate like "rose 2.4%" and quarter like "December quarter 2025"
-    rate_m = re.search(r"(?:rose|fell|increased|decreased)\s+(\d+\.?\d*)%", html, re.IGNORECASE)
-    qtr_m  = re.search(r"(march|june|september|december)\s+quarter\s+(\d{4})", html, re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", html)
+    text = re.sub(r"\s+", " ", text)
 
-    if not rate_m or not qtr_m:
+    # Rows carrying BOTH a monthly and an annual movement, e.g. "Jun-26 -0.1 3.8".
+    # Rows with only a monthly figure (the first 11 months of any series) are skipped.
+    rows: list[tuple[int, int, str]] = []
+    for m in re.finditer(
+        r"\b([A-Z][a-z]{2})-(\d{2})\s+(-?\d+\.\d)\s+(-?\d+\.\d)\b", text
+    ):
+        month = _MONTH_NUM.get(m.group(1).lower())
+        if month is None:
+            continue
+        year = 2000 + int(m.group(2))
+        annual = m.group(4)
+        rows.append((year, month, annual))
+
+    quarter_rows = [r for r in rows if r[1] in _QUARTER_END]
+    if not quarter_rows:
         return []
 
-    yoy  = rate_m.group(1)
-    q    = _MONTHS_Q.get(qtr_m.group(1).lower())
-    year = int(qtr_m.group(2))
-    date_str = f"{year}-{_QUARTER_END[q]}"
-
-    # Index value is harder to parse reliably — omit if not found
-    idx_m = re.search(r"index[^\d]{0,30}?(\d{3}\.\d)", html, re.IGNORECASE)
-    index = idx_m.group(1) if idx_m else ""
-
-    return [(date_str, yoy, index)] if index else []
+    year, month, annual = max(quarter_rows, key=lambda r: (r[0], r[1]))
+    return [(f"{year}-{_QUARTER_END[month]}", annual)]
 
 
 if __name__ == "__main__":
@@ -58,4 +77,4 @@ if __name__ == "__main__":
         for row in rows:
             print("\t".join(row))
     else:
-        print("No data — check https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/latest-release")
+        print(f"No data — check {_URL}")

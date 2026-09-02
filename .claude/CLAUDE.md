@@ -28,21 +28,30 @@ Before committing ANY changes:
 1. Check the latest data point for EVERY indicator
 2. Compare against current date
 3. Update ALL stale indicators before committing
-4. Validate using `python data.py`
+4. Validate using `python build.py`
 
 **A dashboard with stale data is worse than no dashboard at all.**
 
 ## Data Structure
 
+Current layout — one flat file per indicator, observations inline, **no `data.csv`**:
+
 ```
 /data
-  /{jurisdiction}
-    /{indicator_name}
-      indicator.yaml
-      data.csv
+  au_consumer_price_index.yaml
+  au_cash_rate.yaml
+  ...
 ```
 
-## Indicator Schema (indicator.yaml)
+Each file carries `id`, `jurisdiction`, `title`, `category`, `frequency`, `source`,
+`last_updated`, `description`, and a `graph` block; every chart entry in `graph`
+holds its observations inline as a `data:` map of `YYYY-MM-DD: value`.
+
+> The sections below (`indicator.yaml` + `data.csv`, `schema:` dict, per-jurisdiction
+> folders, `python data.py`) describe the **old** structure and are kept for
+> historical context. For the live format, read an existing `data/au_*.yaml`.
+
+## Indicator Schema (historical — see note above)
 
 Every indicator must include the following fields:
 
@@ -158,41 +167,38 @@ date,name,party,colour
 
 **IMPORTANT: All indicators must pass validation before being committed.**
 
-Run the validation script:
+Validation runs as part of the build:
 ```bash
-python data.py
+python build.py
 ```
 
 ### Validation Checks
 
-The `data.py` script validates:
-- All required fields are present in `indicator.yaml`
-- Category values are from the allowed list
-- Frequency values are from the allowed list
-- Schema is a dictionary
-- All indicators have corresponding CSV files
+Each indicator is a single flat file, `data/<id>.yaml` (there are no per-indicator
+folders and no `data.csv`). `build.py` loads every one through `update.Indicator`
+and will raise if a file is missing `id`, `jurisdiction`, `title`, `frequency`, or
+`last_updated`, or if its `graph` block is malformed. `update.py` uses the same
+loader, so `python update.py --dry-run` is also a quick structural check.
+
+`category` must be one of the allowed values and `frequency` one of `Month`,
+`Quarter`, `Annual`, `3 Year`.
 
 ### Success Criteria
 
-A successful validation shows:
-```
-INFO   Jurisdiction ==> Australia
-INFO      Indicator ==> consumer_price_index
-INFO      Indicator ==> prime_minister
-```
-
-**No ERROR messages should appear.**
-
-If you see ERROR messages, they must be fixed before the data is considered valid.
+`python build.py` exits 0 and prints the list of rendered `./dist/*.html` pages
+(one `index`, one per jurisdiction, one per indicator). A traceback means a YAML
+file is malformed — fix it before committing.
 
 ## Adding a New Indicator
 
-1. Create a new folder: `data/{jurisdiction}/{indicator_name}/`
-2. Create `indicator.yaml` with all required fields
-3. Create `data.csv` with appropriate columns matching the schema
-4. Run `python data.py` to validate
-5. Fix any validation errors
-6. Commit only when validation passes
+1. Create `data/<id>.yaml` (e.g. `data/au_new_indicator.yaml`) with `id`,
+   `jurisdiction`, `title`, `category`, `frequency`, `source`, `last_updated`,
+   `description`, and a `graph` block. Copy an existing AU file as a template.
+2. Put the observations inline under `graph[].data` as `YYYY-MM-DD: value`.
+3. Add a `collector:` line only if you also write `collectors/<id>.py` exporting
+   `collect() -> list[tuple]`.
+4. Run `python build.py` to validate and render.
+5. Fix any errors; commit only when it builds clean.
 
 ## Updating Existing Indicators
 
@@ -213,14 +219,16 @@ For automated indicators:
 python update.py    # handles staleness check, fetch, append, and validation
 ```
 
-For manual indicators (no `collector:` field, or when a collector fails):
+For manual indicators (no `collector:` field) **and for any collector `update.py`
+reports under "Errors" or whose output fails a sanity check** — go find the data:
 
-1. **Identify stale indicators** — `update.py` will list them under "Manual update required", or scan `last_updated` in each `indicator.yaml` manually.
-2. **Look up the latest data** — visit the `source` URL in `indicator.yaml` and read the value.
-3. **Append new rows to `data.csv`** — add one row per new period, in chronological order, using `YYYY-MM-DD` end-of-period dates.
-4. **Update `last_updated` in `indicator.yaml`** — set it to the date of the most recent data point just added.
-5. **Validate** — run `python data.py` to confirm no schema errors.
-6. **Commit** — include the data period in the message, e.g. `"Update US unemployment through Jan 2026"`.
+1. **Identify what needs attention** — `update.py` lists "Manual update required" and "Errors". Also scan `last_updated` in each `data/<id>.yaml` against today and `frequency`.
+2. **Look up the latest data** — from the `source` URL: ABS/AIHW via `WebFetch` on the specific release page (`.../jun-2026`, not `/latest-release`); RBA via `WebSearch`. See "When a Collector Fails" for the per-source method.
+3. **Add the new observations** — edit `data/<id>.yaml`, adding `YYYY-MM-DD: value` keys under each `graph[].data` map, in chronological position. Quarter-end = Mar 31 / Jun 30 / Sep 30 / Dec 31; month-end = real last day; RBA = decision date.
+4. **Update `last_updated`** — set it to the newest data date in the file.
+5. **Validate** — `python build.py`.
+6. **If a collector produced the bad data, fix the collector too** — re-run `python update.py --force <id>` until it's a clean no-op, and update its row in the reliability / AI-Fetchable tables.
+7. **Commit** — include the data period, e.g. `"Update AU CPI through Jun 2026"`.
 
 ### Data Sources Quick Reference
 
@@ -291,8 +299,8 @@ After running `update.py`, the following still require manual attention:
 - SA: Residential Property Price Index (StatsSA PDF, not machine-readable)
 - US: President (election-driven, 4-year)
 
-**Problematic collectors (may fail — check output):**
-- AU: Unemployment, CPI, GDP, WPI, House Prices — ABS HTML scraping, fragile
+**Fragile collectors (working as of 2026-09-03 — always sanity-check the newest value against the source):**
+- AU: Unemployment, CPI, GDP, WPI, House Prices, Cash Rate — ABS/RBA HTML scraping. `au_cpi.py`, `au_cash_rate.py`, `au_house_price.py` were rewritten 2026-09-03; the rest verified the same day. Wording/layout changes on the source pages will still break these — see "When a Collector Fails".
 - SA: Repo Rate, CPI, Unemployment, GDP — Trading Economics HTML scraping, fragile
 - US: GDP, Personal Savings Rate — Trading Economics HTML scraping, fragile
 - US: Real Hourly Earnings, Median Home Price — require `FRED_API_KEY` env var
@@ -301,8 +309,8 @@ After running `update.py`, the following still require manual attention:
 - US: Unemployment, Food Prices, Electricity, Healthcare, Rent, Gasoline, CPI
 
 #### Validation & Deployment
-- [ ] Run `python data.py` to validate
-- [ ] Run `python build.py` to test
+- [ ] Run `python build.py` to validate and render `./dist`
+- [ ] Sanity-check each newly written value against its source page
 - [ ] Commit and push updates
 
 ### South Africa Data Collection Notes
@@ -358,7 +366,7 @@ python update.py --force      # update everything regardless of staleness
 python update.py unemployment # target a specific indicator by name substring
 ```
 
-`update.py` scans every `indicator.yaml`, checks staleness against `last_updated` and `frequency`, runs the `collector:` script if present, appends new rows to `data.csv`, and updates `last_updated`. It runs `python data.py` automatically after any writes.
+`update.py` scans every `indicator.yaml`, checks staleness against `last_updated` and `frequency`, runs the `collector:` script if present, appends new rows to the indicator YAML, and updates `last_updated`. Run `python build.py` afterwards to validate and render.
 
 ### The `collector:` Field
 
@@ -391,12 +399,12 @@ python collectors/us_unemployment.py   # prints latest rows as tab-separated val
 | `us_personal_savings.py` | Trading Economics HTML | ⚠️ Fragile | Regex on page |
 | `us_real_earnings.py` | FRED API | 🔑 Needs key | `FRED_API_KEY` required |
 | `us_home_price.py` | FRED API | 🔑 Needs key | `FRED_API_KEY` required |
-| `au_unemployment.py` | ABS Labour Force HTML | ⚠️ Fragile | ABS page structure changes |
-| `au_cash_rate.py` | RBA statistics HTML | ⚠️ Fragile | RBA page structure changes |
-| `au_cpi.py` | ABS CPI HTML | ⚠️ Fragile | ABS page structure changes |
-| `au_gdp.py` | ABS National Accounts HTML | ⚠️ Fragile | ABS page structure changes |
-| `au_wpi.py` | ABS WPI HTML | ⚠️ Fragile | ABS page structure changes |
-| `au_house_price.py` | ABS Total Value HTML | ⚠️ Fragile | ABS page structure changes |
+| `au_unemployment.py` | ABS Labour Force HTML | ⚠️ Fragile | Verified working 2026-09-03 (Jul 2026 → 4.5%). ABS wording changes break it. |
+| `au_cash_rate.py` | RBA statistics HTML | ⚠️ Fragile | Rewritten 2026-09-03 — now reads the rate-*level* column (was reading the bp-*change* column and writing 0.0/0.25). RBA HTML works via plain `urllib` + unverified SSL even though WebFetch is 403'd. |
+| `au_cpi.py` | ABS CPI HTML | ⚠️ Fragile | Rewritten 2026-09-03 — parses the monthly CPI movement table, emits quarter-end months only, YoY rate only (no index — see rebasing note). |
+| `au_gdp.py` | ABS National Accounts HTML | ⚠️ Fragile | Verified working 2026-09-03 (Jun 2026 → 0.4%). ABS wording changes break it. |
+| `au_wpi.py` | ABS WPI HTML | ⚠️ Fragile | Verified working 2026-09-03 (Jun 2026 → 3.2%). ABS wording changes break it. |
+| `au_house_price.py` | ABS Total Value HTML | ⚠️ Fragile | Rewritten 2026-09-03 — matches the "mean price … to $X this quarter" sentence with a sanity bound (was grabbing the first `$` figure on the page, i.e. the total dwelling stock value in billions). |
 | `sa_repo_rate.py` | Trading Economics HTML | ⚠️ Fragile | SARB site has TLS issues |
 | `sa_cpi.py` | Trading Economics HTML | ⚠️ Fragile | Index is approximated from rate |
 | `sa_unemployment.py` | Trading Economics HTML | ⚠️ Fragile | StatsSA PDFs not parseable |
@@ -426,19 +434,27 @@ Without the key, `us_real_earnings.py` and `us_home_price.py` will raise a `Runt
 
 ### When a Collector Fails
 
-If `update.py` reports a collector error:
+**The workflow is: run `python update.py`, then for every indicator it could not update, go and find the data yourself. Do not stop at "the collector failed" — that is the start of the manual path, not the end of the task.** `update.py` prints two lists that need your attention:
 
-1. Run the collector directly: `python collectors/<name>.py` — it prints the manual source URL on failure.
-2. Visit the source URL and read the latest value.
-3. Append the row manually to `data.csv`.
-4. Update `last_updated` in `indicator.yaml`.
-5. If the page structure changed, update the scraper regex in the collector file.
+- **"Manual update required"** — indicators with no collector (elections, AIHW annual, StatsSA PDFs). Expected; handle per the steps below.
+- **"Errors"** — a collector ran and failed or returned nothing, OR returned a value that doesn't match the source (you must sanity-check — see the rule of thumb below). Treat these as broken and do the manual update, then fix the collector.
+
+For any indicator on either list:
+
+1. Run the collector directly for its printed source URL: `python collectors/<name>.py`.
+2. Get the latest value from the authoritative source:
+   - **ABS / AIHW pages** — fetch with `WebFetch`. Use the *specific* release URL (`.../jun-2026`), not `/latest-release`, to get numbers rather than nav links.
+   - **RBA cash rate** — `rba.gov.au` is 403 to `WebFetch`. Use `WebSearch` for the decision ("RBA cash rate <month> <year>"); news coverage of the level is reliable. (The collector itself *can* still reach `rba.gov.au` via `urllib`.)
+3. Data lives in the indicator's `data/<id>.yaml` under `graph[].data` as `YYYY-MM-DD: value` (there is **no** `data.csv`). Quarter-end dates are Mar 31 / Jun 30 / Sep 30 / Dec 31; month-end is the real last day; RBA rows use the actual decision date.
+4. Add the new key(s) in chronological position and set `last_updated` to the newest data date.
+5. Run `python update.py --force <id-substring>` to confirm the fixed collector is now a clean no-op, then `python build.py` to validate and render.
+6. If the page structure changed, fix the collector's parsing so the next run works unattended, and update its status line in the reliability table and the "AI-Fetchable" table below with the date and what you changed.
 
 ### SA CPI Index Note
 
 The SA CPI collector approximates the index using `prior_year_index × (1 + rate/100)` because StatsSA uses a different base period (Dec 2016=100) from what Trading Economics reports (2021=100). The approximation drifts slightly each year. If accuracy matters, manually verify against the StatsSA CPI publication.
 
-### Current Live Data Coverage (as of 2026-07-27)
+### Current Live Data Coverage (as of 2026-09-03)
 
 **Only Australia is currently live in `data/`.** South Africa and United States indicators described elsewhere in this file are not present as `data/*.yaml` files — they exist only under `archive/data/`. Treat any SA/US instruction in this doc as aspirational until those indicators are restored to `data/`.
 
@@ -451,19 +467,30 @@ When checking freshness or pulling a new value for an AU indicator, use this to 
 | Source | AI-fetchable via WebFetch? | Notes |
 |--------|---------------------------|-------|
 | ABS release pages (`abs.gov.au/statistics/...`) | ✅ Yes | Renders fine via WebFetch. Use the specific quarter/month release URL (e.g. `.../mar-2026`), not just `/latest-release`, to get numbers rather than navigation links. |
-| RBA (`rba.gov.au/...`) | ❌ No — returns HTTP 403 | Both `rba.gov.au/statistics/cash-rate/` and `rba.gov.au/monetary-policy/int-rate-decisions/...` block WebFetch. Use `WebSearch` for meeting dates/rates instead (news coverage of RBA decisions is reliable and fast to find), or read the collector's raw fetch output if it still works. |
+| RBA (`rba.gov.au/...`) | ❌ No — returns HTTP 403 | `WebFetch` is blocked. Use `WebSearch` for the decision ("RBA cash rate <month> <year>"). Note `au_cash_rate.py` *can* reach `rba.gov.au` via plain `urllib` + `ssl._create_unverified_context()` — WebFetch's 403 is tool-specific. |
 | AIHW (`aihw.gov.au/...`) | ✅ Yes | Works via WebFetch. |
-| `collectors/au_cpi.py` (ABS CPI scraper) | ⚠️ Broken, do not trust | Currently returns garbage (wrong date, index value with no relation to the real series, e.g. `2024-09-30  4.0  611.6`). Get CPI manually via WebFetch on the ABS release page instead. |
-| `collectors/au_cash_rate.py` (RBA scraper) | ⚠️ Broken, do not trust | Returns 0.0/0.25 "delta-looking" values instead of actual rate levels, and duplicate/garbage dates. A past run of this collector had already polluted `data/au_cash_rate.yaml` with ~15 bogus rows (fixed 2026-07-27 — see below). Get the cash rate manually via `WebSearch` for the RBA decision instead of running this script. |
-| `collectors/au_gdp.py`, `au_wpi.py`, `au_house_price.py`, `au_unemployment.py` | ⚠️ Untested this session | Marked fragile in the reliability table above (ABS HTML scraping) — verify collector output against the ABS release page before trusting it, same as CPI/cash rate above. |
+| `collectors/au_cpi.py` (ABS CPI scraper) | ✅ Working (rewritten 2026-09-03) | Parses the monthly CPI movement table, emits the latest quarter-end month's YoY rate. Cross-check against the ABS release page. Does **not** emit the index value — the base-2011-12 index series is frozen pending a rebasing decision (see below). |
+| `collectors/au_cash_rate.py` (RBA scraper) | ✅ Working (rewritten 2026-09-03) | Now reads the rate-level column (was reading the basis-point change → 0.0/0.25). Returns the last 24 board decisions. Cross-check the newest row against a news report of the RBA decision. |
+| `collectors/au_gdp.py`, `au_wpi.py`, `au_unemployment.py` | ✅ Working (verified 2026-09-03) | ABS HTML scrapers, still fragile to wording changes. Cross-check the newest value against the specific ABS release page every run. |
+| `collectors/au_house_price.py` (ABS Total Value scraper) | ✅ Working (rewritten 2026-09-03) | Matches the "mean price … to $X this quarter" sentence with a plausibility bound. The ABS release lags ~1 quarter (Jun-quarter figure lands ~late Sept). |
 
-**Rule of thumb:** for AU indicators, prefer fetching the ABS/AIHW release page directly with WebFetch and reading the number off the page over running the `collectors/au_*.py` scripts — the scripts are currently unreliable and at least one (`au_cash_rate.py`) has previously written bad data straight into a live file. If a collector's output doesn't match what WebFetch/WebSearch shows for the same period, don't append it — treat the collector as broken and fix it before using it again.
+**Rule of thumb:** run `python update.py`, then for every indicator it flags (manual, error, or a value that fails a sanity check) go fetch the number yourself — ABS/AIHW via `WebFetch` on the specific release URL, RBA via `WebSearch`. Always eyeball the newest collector value against the source before trusting it: right ballpark, right period, right sign. If it doesn't match, don't append it — fix the collector, re-run, and update its status line in the two tables above with the date and the change. A collector writing one bad number into a live YAML is the failure mode that has bitten this project twice (`au_cash_rate.py`, `au_house_price.py`).
 
 ### 2026-07-27 Data Fixes
 
 - **CPI**: added Mar 2026 quarter, YoY rate = 4.6% ([source](https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/mar-2026)). The index-value series (base 2011-12=100) was **not** extended — ABS has rebased CPI reporting to Sep 2025=100 and no longer publishes on the old base, so continuing that series requires an explicit decision (rebase historical series, approximate via chaining, or stop the series) rather than a routine update. Ask before resuming it.
 - **RBA cash rate**: removed ~15 corrupted rows (bogus 0.0/0.25 values at dates that didn't correspond to real decisions) left behind by a broken `au_cash_rate.py` run, and added the two real missing decisions: 2026-05-05 → 4.35% (third hike of the year), 2026-06-16 → 4.35% (hold).
 - **ED wait times**: confirmed current (2024–25 FY, last_updated 2025-06-30 is still AIHW's latest published period) — no change needed.
+
+### 2026-09-03 Data Fixes
+
+- **CPI**: added Jun 2026 quarter, YoY rate = 3.8% ([source](https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia/jun-2026)). Index series still frozen (rebasing decision outstanding).
+- **Median house price**: latest row was corrupted — `2026-03-31: 315000000.0` (the collector had grabbed the total dwelling-stock value change, $315.9bn). Corrected to the real Mar 2026 mean price, $1,111,100. No Jun 2026 quarter yet — ABS hadn't released it.
+- **RBA cash rate**: `data/au_cash_rate.yaml` was corrupted *again* — 16 rows of 0.0/0.25 (basis-point changes, not rate levels) appended out of order by the broken collector, and the two real 2026 decisions sat at slightly wrong dates. Removed the garbage, realigned dates to the RBA's own table (`2026-05-06`, `2026-06-17`), and added the 12 Aug 2026 hold at 4.35%. The clean 2010–2026 level series is now correct.
+- **Unemployment**: filled the Apr 2026 (4.5%) and May 2026 (4.4%) gap; Jun (4.4%) and Jul (4.5%) confirmed against ABS.
+- **GDP / WPI**: Jun 2026 quarter values (0.4% / 3.2%) confirmed against ABS. WPI Mar 2026 quarter revised 3.3% → 3.2% to match the figure in the Jun 2026 release (original Mar 2026 release said 3.3%; ABS revises seasonally adjusted WPI annual rates by ~0.1pp between releases).
+- **Collectors**: rewrote `au_cpi.py`, `au_cash_rate.py`, `au_house_price.py`; verified `au_gdp.py`, `au_wpi.py`, `au_unemployment.py` produce correct current values. All six now run as clean no-ops under `python update.py --force`.
+- **`update.py` bug fix**: `Indicator.merge()` set `last_updated` from the newest *new* row, so a collector returning older backfill rows dragged `last_updated` backwards. It now uses the newest date across all data.
 
 ### Known Technical Limitations
 

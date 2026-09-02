@@ -4,7 +4,7 @@ title: GDP Growth
 category: Economy
 frequency: Quarter
 source: https://www.abs.gov.au/statistics/economy/national-accounts/australian-national-accounts-national-income-expenditure-and-product
-last_updated: 2026-03-31
+last_updated: 2026-06-30
 collector: collectors/au_gdp.py
 description: 'Tracks Australia''s Gross Domestic Product (GDP) growth rate, measuring the change in the total value of goods
   and services produced. GDP growth is the primary measure of economic performance and central to evaluating government economic
@@ -83,3 +83,4 @@ graph:
     2025-09-30: 0.4
     2025-12-31: 0.8
     2026-03-31: 0.3
+    2026-06-30: 0.4

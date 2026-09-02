@@ -212,7 +212,14 @@ class Indicator:
                 if col_index < len(row):
                     graph.setdefault("data", {})[d] = _coerce(row[col_index])
 
-        self._data["last_updated"] = date.fromisoformat(new_rows[-1][0])
+        # last_updated tracks the most recent data point overall, so a collector
+        # that also returns older backfill rows can't drag it backwards.
+        latest = max(
+            (date.fromisoformat(d) for g in cg for d in g.get("data", {})),
+            default=None,
+        )
+        if latest is not None:
+            self._data["last_updated"] = latest
         return len(new_rows)
 
     def save(self) -> None:
