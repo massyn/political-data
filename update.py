@@ -13,7 +13,7 @@ from __future__ import annotations
 import importlib.util
 import re
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -186,6 +186,32 @@ class Indicator:
             return set()
         return set(cg[0].get("data", {}).keys())
 
+    def missing_periods(self) -> list[str]:
+        """
+        Period-end dates absent from the first chart graph's series.
+
+        Only checked for regular series: Month/Quarter/Annual indicators whose
+        every date is a month-end (irregular series such as RBA decisions, and
+        elections, are skipped). Catches collectors that skip periods.
+        """
+        step = {"Month": 1, "Quarter": 3, "Annual": 12}.get(self.frequency)
+        dates = sorted(date.fromisoformat(d) for d in self.known_dates())
+        if not step or len(dates) < 2:
+            return []
+        if any((d + timedelta(days=1)).day != 1 for d in dates):
+            return []
+        if step == 12 and len({d.month for d in dates}) > 1:
+            return []
+
+        present = {d.year * 12 + d.month for d in dates}
+        missing = []
+        for idx in range(dates[0].year * 12 + dates[0].month, max(present) + 1, step):
+            if idx not in present:
+                year, month = divmod(idx - 1, 12)
+                last = date(year + (month + 1) // 12, (month + 1) % 12 + 1, 1) - timedelta(days=1)
+                missing.append(last.isoformat())
+        return missing
+
     # ── merge & persist ───────────────────────────────────────────────────────
 
     def merge(self, rows: list[tuple]) -> int:
@@ -266,6 +292,7 @@ def main() -> None:
     manual:  list[str] = []
     errors:  list[str] = []
     current: list[str] = []
+    missing: list[str] = []
 
     for yaml_path in sorted(Path("data").glob("*.yaml")):
         ind = Indicator(yaml_path)
@@ -277,11 +304,15 @@ def main() -> None:
         days  = ind.days_since_update
         age   = f"{days}d ago" if days is not None else "never updated"
 
+        gaps = ind.missing_periods()
+        if gaps:
+            missing.append(f"{ind.label}: {', '.join(gaps)}")
+
         if not stale:
             current.append(f"{ind.label}  ({age})")
             continue
 
-        if ind.status == Indicator.STATUS_STALE_MANUAL:
+        if not ind.collector:
             manual.append(f"{ind.label}  (last: {ind.last_updated or 'never'})")
             continue
 
@@ -315,9 +346,14 @@ def main() -> None:
         for e in errors:
             print(f"  ! {e}")
 
-    if not updated and not manual and not errors:
+    if missing:
+        print(f"\nMissing periods - fill by hand ({len(missing)}):")
+        for m in missing:
+            print(f"  ? {m}")
+
+    if not updated and not manual and not errors and not missing:
         print(f"All {len(current)} indicator(s) are current.")
-    elif current and not (manual or errors):
+    elif current and not (manual or errors or missing):
         print(f"\n{len(current)} indicator(s) already current.")
 
 
