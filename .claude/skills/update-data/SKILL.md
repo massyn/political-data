@@ -17,11 +17,13 @@ Follow `massyn:devops`. Never run git on main. Reuse the open working branch if 
 python update.py
 ```
 
-Read the three lists it prints:
+Read the lists it prints:
 
 - **Updated** - a collector wrote rows. These are not trusted yet (step 3).
 - **Errors** - collector failed or returned nothing. Look the value up by hand (step 4).
 - **Manual update required** - no collector (`au_prime_minister`, `au_emergency_department_wait_times`). Check whether the source has published something new since `last_updated`; if not, no change.
+
+- **Missing periods** - the series skips an expected month or quarter (collectors only append the newest rows). Fill these by hand in step 4.
 
 Anything not mentioned and "already up to date" still gets the freshness check in step 5.
 
@@ -31,7 +33,7 @@ A collector writing one bad number is this project's recurring failure. Run `git
 
 | Indicator | Verify with | Notes |
 |---|---|---|
-| Unemployment, CPI, WPI, GDP, house price | `WebFetch` the *specific* ABS release page, e.g. `.../labour-force-australia/oct-2026`, `.../consumer-price-index-australia/sep-2026`, `.../wage-price-index-australia/sep-2026`, `.../total-value-dwellings/jun-2026` | Never `/latest-release`. ABS URL slugs vary by release (a 404 means try `jun-quarter-2026`, or fall back to WebSearch). |
+| Unemployment, CPI, WPI, GDP, house price | `WebFetch` the *specific* ABS release page, e.g. `.../labour-force-australia/oct-2026`, `.../consumer-price-index-australia/sep-2026`, `.../wage-price-index-australia/sep-2026`, `.../total-value-dwellings/jun-quarter-2026` | Never `/latest-release`. ABS URL slugs vary by release (quarterly Total Value of Dwellings uses `jun-quarter-2026`; on a 404 try the other form, or fall back to WebSearch). |
 | RBA cash rate | `WebSearch` "RBA cash rate <month> <year>" | `rba.gov.au` returns 403 to WebFetch. Rows use the day *after* the decision (the RBA table's date). |
 | ED wait times | `WebFetch` AIHW | Annual, usually no change. |
 
@@ -39,7 +41,7 @@ If a value is wrong: do not keep it. Correct the YAML, then fix the collector so
 
 ## 4. Fill gaps by hand
 
-Collectors only append the newest rows and have skipped periods before (unemployment once jumped Jul to Oct). For each file check the series has no missing periods since the previous `last_updated`, and add any missing `YYYY-MM-DD: value` keys under `graph[].data` in chronological position. Date rules: quarter-end is Mar 31 / Jun 30 / Sep 30 / Dec 31, month-end is the real last day, RBA is the table date.
+Collectors only append the newest rows and have skipped periods before (unemployment once jumped Jul to Oct). `update.py` lists these under "Missing periods" (month-end series only; irregular series such as the RBA rate are skipped). Add any missing `YYYY-MM-DD: value` keys under `graph[].data` in chronological position. Date rules: quarter-end is Mar 31 / Jun 30 / Sep 30 / Dec 31, month-end is the real last day, RBA is the table date.
 
 CPI: add the YoY rate only. The index series (base 2011-12=100) stays frozen pending a rebasing decision - ask before resuming it.
 
