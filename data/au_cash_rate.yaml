@@ -4,7 +4,7 @@ title: RBA Cash Rate Target
 category: Economy
 frequency: Month
 source: https://www.rba.gov.au/statistics/cash-rate/
-last_updated: 2026-08-12
+last_updated: 2026-11-04
 collector: collectors/au_cash_rate.py
 description: 'Tracks the Reserve Bank of Australia''s official cash rate target — the interest rate on overnight loans in
   the money market. The RBA uses the cash rate as its primary monetary policy tool to influence inflation and economic growth.
@@ -76,3 +76,5 @@ graph:
     2026-05-06: 4.35
     2026-06-17: 4.35
     2026-08-12: 4.35
+    2026-09-30: 4.6
+    2026-11-04: 4.85

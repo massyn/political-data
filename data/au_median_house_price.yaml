@@ -4,7 +4,7 @@ title: Median House Price
 category: Housing
 frequency: Quarter
 source: https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/residential-property-price-indexes-eight-capital-cities
-last_updated: 2026-03-31
+last_updated: 2026-06-30
 collector: collectors/au_house_price.py
 description: 'Tracks the mean dwelling price across Australia''s eight capital cities as a proxy for housing affordability
   and market conditions. Housing affordability is a critical political issue affecting homeownership rates and cost of living.
@@ -45,3 +45,4 @@ graph:
     2025-09-30: 998000
     2025-12-31: 1074700
     2026-03-31: 1111100
+    2026-06-30: 1100400.0
