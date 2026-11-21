@@ -31,11 +31,20 @@
     footer a { color: rgba(255,255,255,.6); }
     .breadcrumb { background: none; padding: 0; font-size: .85rem; }
     .breadcrumb-item + .breadcrumb-item::before { color: #9ca3af; }
+    @media (max-width: 575.98px) {
+      /* Phone: metric rows become a two-line grid - name and value on top, trend details below */
+      .metric-row { display: grid; grid-template-columns: auto 1fr auto; gap: .2rem .75rem;
+                    grid-template-areas: "name name val" "spark delta date"; }
+      .metric-name  { grid-area: name; align-self: center; }
+      .metric-val   { grid-area: val; align-self: center; }
+      .metric-spark { grid-area: spark; line-height: 0; }
+      .metric-date  { grid-area: date; align-self: center; }
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
-<nav class="navbar navbar-expand-md fixed-top topbar">
+<nav class="navbar navbar-expand-md fixed-top topbar" data-bs-theme="dark">
   <div class="container">
     <a class="navbar-brand" href="index.html">Political Data</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
@@ -54,7 +63,7 @@
 </main>
 
 <footer>
-  <div class="container d-flex justify-content-between">
+  <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2">
     <span>Political Data — open-source accountability{% if last_run %} &middot; Last run {{ last_run }}{% endif %}</span>
     <span><a href="status.html" class="me-3">Status</a><a href="https://github.com/massyn/political-data">GitHub</a></span>
   </div>
