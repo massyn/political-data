@@ -20,6 +20,9 @@
   .fresh-pill.fresh-current     { background: #dcfce7; color: #15803d; }
   .fresh-pill.fresh-stale       { background: #fef3c7; color: #b45309; }
   .fresh-pill.fresh-out_of_date { background: #fee2e2; color: #b91c1c; }
+  .event-icon   { position: absolute; font-size: 30px; line-height: 1; cursor: help; user-select: none; }
+  .event-legend { font-size: .78rem; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+  .event-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .35rem; opacity: .6; }
   .cell-bad    { color: #b91c1c; font-weight: 600; }
 </style>
 {% endblock %}
@@ -61,7 +64,7 @@
     {% if kpi.delta is not none %}
     <div class="kpi-delta">
       {% if kpi.delta > 0 %}&#9650;{% elif kpi.delta < 0 %}&#9660;{% else %}&#9654;{% endif %}
-      {{ kpi.delta_text }} since {{ kpi.since }} took office ({{ kpi.since_date }})
+      {{ kpi.delta_text }} since {{ kpi.since_text }}
     </div>
     {% endif %}
   </div>
@@ -73,6 +76,13 @@
 {# ── Time-series chart ── #}
 <div class="card mb-3 p-3">
   <div class="fw-semibold mb-2">{{ graph.title }}</div>
+  {% if graph.events %}
+  <div class="event-legend mb-2">
+    {% for e in graph.events %}
+    <span class="event-key"><span class="event-swatch" style="background:{{ e.colour }};"></span>{{ e.icon }} {{ e.name }} <span class="text-muted">({{ e.label }})</span></span>
+    {% endfor %}
+  </div>
+  {% endif %}
   <div class="chart-wrap">
     <canvas id="chart-{{ loop.index0 }}"></canvas>
   </div>
@@ -180,9 +190,41 @@ function buildAnnotations(series, overlayList) {
   const overlayId  = {{ graph.overlay_id | tojson }};
   const overlayList = overlayId ? (overlays[overlayId] || []) : [];
   const annotations = buildAnnotations(series, overlayList);
+  const events = {{ graph.events | tojson }};
+  events.forEach((e, i) => {
+    annotations[`event${i}`] = {
+      type: 'box', xMin: e.start, xMax: e.end,
+      backgroundColor: hexToRgba(e.colour, 0.18),
+      borderColor: hexToRgba(e.colour, 0.55), borderWidth: 1, z: 1
+    };
+  });
+
+  // Event icons are HTML elements over the canvas so the browser shows a native
+  // tooltip (name and dates) on hover; they follow the chart on every render.
+  const wrap = document.getElementById('chart-{{ loop.index0 }}').parentElement;
+  const icons = events.filter(e => e.icon).map(e => {
+    const el = document.createElement('span');
+    el.className = 'event-icon';
+    el.textContent = e.icon;
+    el.title = `${e.name} (${e.label})`;
+    wrap.appendChild(el);
+    return { el, e };
+  });
+  const eventIcons = {
+    id: 'eventIcons',
+    afterRender(chart) {
+      const { x } = chart.scales;
+      icons.forEach(({ el, e }) => {
+        const mid = (x.getPixelForValue(new Date(e.start).getTime()) + x.getPixelForValue(new Date(e.end).getTime())) / 2;
+        el.style.left = `${mid - el.offsetWidth / 2}px`;
+        el.style.top = `${chart.chartArea.top + 4}px`;
+      });
+    }
+  };
 
   new Chart(document.getElementById('chart-{{ loop.index0 }}'), {
     type: 'line',
+    plugins: [eventIcons],
     data: {
       datasets: [{
         label: {{ graph.y_label | tojson }},

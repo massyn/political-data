@@ -10,13 +10,14 @@ URL is stable.
 """
 
 import io
-import urllib.request
 from datetime import datetime
 
 import openpyxl
 
+from collectors.net import get
+
 _URL = (
-    "https://aofm.gov.au/sites/default/files/2025-05-02/"
+    "https://www.aofm.gov.au/sites/default/files/2025-05-02/"
     "portfolio_aggregate_-_settlement.xlsx"
 )
 _SHEET = "FaceValue"
@@ -28,9 +29,7 @@ _MAX_BN = 5_000
 
 
 def collect() -> list[tuple]:
-    req = urllib.request.Request(_URL, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        payload = r.read()
+    payload = get(_URL)
 
     ws = openpyxl.load_workbook(io.BytesIO(payload), read_only=True, data_only=True)[_SHEET]
     rows = list(ws.iter_rows(values_only=True))

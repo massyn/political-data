@@ -18,7 +18,7 @@ CYCLE_MONTHS: dict[str, int] = {"Month": 1, "Quarter": 3, "Annual": 12, "3 Year"
 LABELS = {"current": "Up to date", "stale": "Stale", "out_of_date": "Out of date"}
 
 
-def _add_months(d: date, months: int) -> date:
+def add_months(d: date, months: int) -> date:
     """d plus whole months; month-end dates stay month-end (30 Jun + 3 -> 30 Sep)."""
     index = d.year * 12 + d.month - 1 + months
     year, month = divmod(index, 12)
@@ -35,9 +35,9 @@ def freshness(latest: date | None, frequency: str, today: date | None = None) ->
 
     today = today or date.today()
     months = CYCLE_MONTHS[frequency]
-    due = _add_months(latest, months)
+    due = add_months(latest, months)
     overdue = (today - due).days
-    cycle_days = (_add_months(due, months) - due).days
+    cycle_days = (add_months(due, months) - due).days
 
     if overdue <= 0:
         status = "current"

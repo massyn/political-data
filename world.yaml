@@ -1,0 +1,23 @@
+# World events drawn as coloured bands over every time-series chart, so readers
+# can see what was happening in the world when a number moved.
+#
+# name:   shown in the chart legend
+# icon:   emoji shown at the top of the band
+# start:  YYYY-MM-DD
+# end:    YYYY-MM-DD, or leave out while the event is ongoing
+# colour: hex colour of the band
+events:
+  - name: Global Financial Crisis
+    icon: "\U0001F4C9"
+    start: 2007-08-09
+    end: 2009-06-30
+    colour: "#6b7280"
+  - name: COVID-19 pandemic
+    icon: "☣️"
+    start: 2020-03-11
+    end: 2023-05-05
+    colour: "#dc2626"
+  - name: Iran war
+    icon: "⚔️"
+    start: 2026-02-28
+    colour: "#f59e0b"

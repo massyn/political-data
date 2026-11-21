@@ -5,7 +5,7 @@ description: Refresh the political-data indicators - run the collectors, sanity-
 
 # Update the data
 
-Only Australia is live in `data/`. SA and US material lives under `archive/` and in `reference.md`.
+Australia and World indicators are live in `data/`. SA and US material lives under `archive/` and in `reference.md`. Manual indicators (no `collector:`) have step-by-step instructions in `reference.md`; whenever a metric cannot be given a collector, record how to update it there.
 
 ## 1. Sync and branch
 
