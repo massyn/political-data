@@ -19,7 +19,8 @@ from pathlib import Path
 import jinja2
 import yaml
 
-from freshness import freshness
+from freshness import add_months, freshness
+from world_events import events_for_range, load_events
 from update import Indicator
 
 OUTPUT_DIR = sys.argv[1] if len(sys.argv) > 1 else "./dist"
@@ -173,9 +174,11 @@ def _gov_performance(graph: dict, overlay: list[dict]) -> list[dict] | None:
 
 def _kpi(graph: dict, overlay: list[dict]) -> dict | None:
     """
-    Headline figure for the indicator page: latest value and date, plus the
-    change since the current government took office (first observation on or
-    after its start date). RAG follows the graph's direction.
+    Headline figure for the indicator page: latest value and date, plus its
+    change since a baseline. The baseline is the first observation on or after
+    the current government took office; with no government overlay (e.g. world
+    indicators) it is the latest observation on or before 12 months earlier.
+    RAG follows the graph's direction.
     """
     data = sorted(
         (d, v) for d, v in graph.get("data", {}).items() if isinstance(v, (int, float))
@@ -193,15 +196,26 @@ def _kpi(graph: dict, overlay: list[dict]) -> dict | None:
 
     kpi = {
         "value": _fmt(graph, latest), "date": latest_date, "label": graph.get("y", ""),
-        "rag": "", "delta": None, "since": None,
+        "rag": "", "delta": None, "since_text": "",
     }
-    gov = overlay[-1] if overlay else None
-    start = next((v for d, v in data if gov and d >= gov["date"]), None)
-    if gov and start is not None:
-        delta = latest - start
-        kpi.update(delta=round(delta, 4), delta_text=_fmt(graph, round(delta, 4), signed=True)
-                   if graph.get("format") else f"{delta:+.2f}",
-                   rag=rag_for(delta), since=gov["value"], since_date=gov["date"])
+
+    if overlay:
+        gov = overlay[-1]
+        base = next(((d, v) for d, v in data if d >= gov["date"]), None)
+        since_text = f"{gov['value']} took office ({gov['date']})"
+    else:
+        target = add_months(date.fromisoformat(latest_date), -12).isoformat()
+        base = next(((d, v) for d, v in reversed(data) if d <= target), None)
+        since_text = f"12 months ago ({base[0]})" if base else ""
+
+    if base is not None:
+        delta = round(latest - base[1], 4)
+        kpi.update(
+            delta=delta,
+            delta_text=_fmt(graph, delta, signed=True) if graph.get("format") else f"{delta:+.2f}",
+            rag=rag_for(delta),
+            since_text=since_text,
+        )
     return kpi
 
 
@@ -298,6 +312,7 @@ def main() -> None:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     cutoff = _cutoff()
     flags = _flags()
+    world = load_events()
     if Path(STATIC_DIR).is_dir():
         shutil.copytree(STATIC_DIR, f"{OUTPUT_DIR}/{STATIC_DIR}", dirs_exist_ok=True)
 
@@ -401,12 +416,14 @@ def main() -> None:
                 if overlay_id and overlay_id in by_id and graph.get("direction"):
                     gov_perf = _gov_performance(graph, _overlay_all(by_id[overlay_id]))
 
+                series = _chart_series(graph, cutoff)
                 graphs.append({
+                    "events":      events_for_range(world, series[0]["x"], series[-1]["x"]) if series else [],
                     "title":       graph.get("title", ""),
                     "y_label":     graph.get("y", ""),
                     "direction":   graph.get("direction", ""),
                     "overlay_id":  overlay_id,
-                    "series":      _chart_series(graph, cutoff),
+                    "series":      series,
                     "gov_perf":    gov_perf,
                 })
 

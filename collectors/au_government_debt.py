@@ -10,13 +10,11 @@ URL is stable.
 """
 
 import io
-import logging
-import time
-import urllib.error
-import urllib.request
 from datetime import datetime
 
 import openpyxl
+
+from collectors.net import get
 
 _URL = (
     "https://www.aofm.gov.au/sites/default/files/2025-05-02/"
@@ -26,32 +24,12 @@ _SHEET = "FaceValue"
 _COLUMN = "Total AUD Main Funding Instruments"
 
 # Plausible bounds (AUD billion) to reject a mis-parsed column or unit change.
-_ATTEMPTS = 3
-_TIMEOUT = 30
-_BACKOFF = 5
-
-log = logging.getLogger(__name__)
-
 _MIN_BN = 10
 _MAX_BN = 5_000
 
 
-def _download() -> bytes:
-    """Fetch the workbook, retrying transient network failures."""
-    req = urllib.request.Request(_URL, headers={"User-Agent": "Mozilla/5.0"})
-    for attempt in range(1, _ATTEMPTS + 1):
-        try:
-            with urllib.request.urlopen(req, timeout=_TIMEOUT) as r:
-                return r.read()
-        except (TimeoutError, urllib.error.URLError) as exc:
-            log.warning("AOFM download attempt %d/%d failed: %s", attempt, _ATTEMPTS, exc)
-            if attempt == _ATTEMPTS:
-                raise
-            time.sleep(_BACKOFF * attempt)
-
-
 def collect() -> list[tuple]:
-    payload = _download()
+    payload = get(_URL)
 
     ws = openpyxl.load_workbook(io.BytesIO(payload), read_only=True, data_only=True)[_SHEET]
     rows = list(ws.iter_rows(values_only=True))

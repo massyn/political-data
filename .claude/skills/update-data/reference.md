@@ -181,3 +181,32 @@ These have been hit before — don't repeat the same mistakes:
 | **BLS API returns last 3 years only** | The BLS Public API v1 (no auth) returns only 3 years of data per request. This is fine for updates but insufficient for historical backfills — for those, download the full series CSV from the BLS website manually. |
 | **Freddie Mac PMMS date format** | The PMMS archive uses US date format (MM/DD/YYYY). The `us_mortgage.py` collector handles this, but if the page structure changes the regex will break. |
 
+### Collectors added 2026-11 (Australia and World)
+
+Shared helpers: `collectors/net.py` (download with retries), `collectors/abs_api.py` (ABS Data API, SDMX CSV), `collectors/fred.py` (FRED monthly CSV). Run any of them with `python -m collectors.<name>` from the project root (they import `collectors.*`).
+
+| Indicator | Collector | Source | Notes |
+|-----------|-----------|--------|-------|
+| Underemployment Rate | `au_underemployment.py` | ABS API `LF_UNDER` M23, SA | Monthly from 1978. Reliable. |
+| Rent Inflation | `au_rent_cpi.py` | ABS API `CPI` index 30014, Q | Annual % computed from the quarterly index (1973 on); can differ slightly from the monthly CPI headline. |
+| Real Wage Growth | `au_real_wages.py` | ABS API `WPI` THRPEB and `CPI` 10001, Q | (1+WPI yoy)/(1+CPI yoy)-1, both from quarterly indexes. |
+| Net Overseas Migration | `au_net_overseas_migration.py` | ABS API `ERP_COMP_Q` measure 9 | Sum of 4 quarters, x1000 (published in thousands). ABS lags ~6 months, so this shows Out of date between releases; that is the source, not a collector fault. No `direction` by design. |
+| Homicide Victimisation Rate | `au_homicide_rate.py` | ABS Recorded Crime - Victims, Table 1 xlsx | Annual (31 Dec). Finds the xlsx link on the release page, so ABS link or layout changes break it (fragile). Includes attempted murder. |
+| Government Debt | `au_government_debt.py` | AOFM data hub xlsx, `FaceValue` sheet | AGS on issue, $bn, monthly from 2003. File is replaced in place at a stable URL. |
+| Brent Crude Oil Price (World) | `world_brent_crude_oil.py` | FRED `MCOILBRENTEU` | Monthly average, complete months only. |
+| AUD/USD | `au_exchange_rate.py` | FRED `EXUSAL` | Monthly average, complete months only. |
+
+**FRED quirk:** `fred.stlouisfed.org` hangs any request that sends a custom or browser `User-Agent`; only urllib's default (or curl's) is answered. `collectors/fred.py` therefore calls `net.get(..., user_agent=None)`. Do not "fix" it by adding a User-Agent.
+
+**ABS API:** `https://data.api.abs.gov.au/rest/data/ABS,<dataflow>,<version>/<key>` with `Accept: text/csv`; dimension codes come from `.../rest/dataflow/ABS/<id>?references=all&detail=full`. Crime is not in the API.
+
+### Manual indicators - how to update by hand
+
+Any indicator without a `collector:` line must be listed here with the steps to update it. Add a section for every new manual metric.
+
+- **Emergency Department Wait Times** (`au_emergency_department_wait_times`, annual): AIHW publishes the previous financial year in Nov/Dec. Read the national figure from https://www.aihw.gov.au/hospitals/topics/emergency-departments/time-spent-in-emergency ("X% of people ... completed within 4 hours"). Add `<year>-06-30: <value>` for the financial year ending that 30 June. AIHW revises prior years, so compare the earlier values quoted on the page. Known unreconciled: the file has 65 for 2021-06-30 but AIHW quotes 67% for 2020-21.
+- **Prime Minister of Australia** (`au_prime_minister`, 3 Year): add a row at each federal election (election date, winner, party, colour) from https://results.aec.gov.au/. Only needed when an election has been held.
+
+### World events (`world.yaml`)
+
+World events drawn as bands on charts (name, icon, start, optional end, colour). Add an event when something major starts, and set `end:` when it finishes. The Iran war (from 2026-02-28) has no end date and needs one when it ends.

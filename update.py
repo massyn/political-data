@@ -304,7 +304,7 @@ def main() -> None:
         if target and target not in ind.id:
             continue
 
-        stale = force or ind.is_stale
+        stale = ind.is_stale
         days  = ind.days_since_update
         age   = f"{days}d ago" if days is not None else "never updated"
 
@@ -312,12 +312,16 @@ def main() -> None:
         if gaps:
             missing.append(f"{ind.label}: {', '.join(gaps)}")
 
-        if not stale:
-            current.append(f"{ind.label}  ({age})")
+        if not ind.collector:
+            # Manual indicators have nothing to force; flag them only when overdue.
+            if stale:
+                manual.append(f"{ind.label}  (last: {ind.last_updated or 'never'})")
+            else:
+                current.append(f"{ind.label}  ({age})")
             continue
 
-        if not ind.collector:
-            manual.append(f"{ind.label}  (last: {ind.last_updated or 'never'})")
+        if not (force or stale):
+            current.append(f"{ind.label}  ({age})")
             continue
 
         print(f"  {ind.label} ...", end=" ", flush=True)

@@ -6,3 +6,5 @@
 #      then add the entry below. (flagcdn also serves subnational flags, e.g. us-ca.)
 Australia:
   iso: au
+World:
+  iso: un
