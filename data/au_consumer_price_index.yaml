@@ -14,6 +14,7 @@ description: 'Tracks the Consumer Price Index (CPI) for Australia. The inflation
 graph:
 - x: date
   y: Year-over-year inflation rate (%)
+  format: '{:.1f}%'
   title: Percentage Change
   overlay_metric: au_prime_minister
   direction: lower_is_better
@@ -87,6 +88,7 @@ graph:
     2026-09-30: 4.3
 - x: date
   y: CPI index value (base 2011-12 = 100)
+  format: '{:.1f}'
   title: CPI Index Value
   overlay_metric: au_prime_minister
   data:

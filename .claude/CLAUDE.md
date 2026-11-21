@@ -218,3 +218,10 @@ When adding indicators, ask:
 - Can this be objectively measured?
 - Can citizens verify this data?
 - Will this help hold governments accountable?
+
+## Jurisdictions and Flags
+
+`jurisdictions.yaml` maps each `jurisdiction:` name to its ISO 3166-1 alpha-2 code. Flags are
+vendored SVGs from **flagcdn.com** in `static/flags/<iso>.svg` (`build.py` copies `static/` into
+`dist/`). To add a new country: `curl -fL https://flagcdn.com/<iso>.svg -o static/flags/<iso>.svg`
+and add it to `jurisdictions.yaml`. flagcdn also serves subnational flags (e.g. `us-ca`).

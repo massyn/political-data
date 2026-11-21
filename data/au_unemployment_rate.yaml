@@ -14,6 +14,7 @@ description: 'Tracks Australia''s unemployment rate — the percentage of people
 graph:
 - x: date
   y: Unemployment rate (%)
+  format: '{:.1f}%'
   title: Unemployment Rate (%)
   overlay_metric: au_prime_minister
   direction: lower_is_better

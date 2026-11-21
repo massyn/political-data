@@ -10,17 +10,23 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import jinja2
+import yaml
 
+from freshness import freshness
 from update import Indicator
 
 OUTPUT_DIR = sys.argv[1] if len(sys.argv) > 1 else "./dist"
 TEMPLATE_DIR = "templates"
+STATIC_DIR = "static"
+JURISDICTIONS_FILE = "jurisdictions.yaml"
+LASTRUN_FILE = "lastrun.txt"
 CHART_YEARS = 25
 
 
@@ -50,6 +56,22 @@ def _sparkline(values: list[float], width: int = 140, height: int = 36) -> str:
         f'<polyline points="{pts}" fill="none" stroke="#3498db" stroke-width="1.5" '
         f'stroke-linejoin="round" stroke-linecap="round"/></svg>'
     )
+
+
+def _fmt(graph: dict, value, signed: bool = False):
+    """
+    Render a value using the graph's optional `format` (a Python format string,
+    e.g. '${:,.0f}' or '{:.1f}%'). Non-numeric values and graphs without a
+    format are returned unchanged. With signed=True a +/- prefix is added
+    (the format is applied to the absolute value).
+    """
+    fmt = graph.get("format")
+    if not fmt or not isinstance(value, (int, float)):
+        return value
+    text = fmt.format(abs(value) if signed else value)
+    if signed:
+        return ("+" if value > 0 else "-" if value < 0 else "") + text
+    return text
 
 
 def _rag(values: list[float], direction: str) -> str:
@@ -149,6 +171,40 @@ def _gov_performance(graph: dict, overlay: list[dict]) -> list[dict] | None:
     return result or None
 
 
+def _kpi(graph: dict, overlay: list[dict]) -> dict | None:
+    """
+    Headline figure for the indicator page: latest value and date, plus the
+    change since the current government took office (first observation on or
+    after its start date). RAG follows the graph's direction.
+    """
+    data = sorted(
+        (d, v) for d, v in graph.get("data", {}).items() if isinstance(v, (int, float))
+    )
+    if not data:
+        return None
+    latest_date, latest = data[-1]
+    direction = graph.get("direction", "")
+
+    def rag_for(delta: float) -> str:
+        if not direction or abs(delta) < 1e-9:
+            return ""
+        better = delta < 0 if direction == "lower_is_better" else delta > 0
+        return "good" if better else "bad"
+
+    kpi = {
+        "value": _fmt(graph, latest), "date": latest_date, "label": graph.get("y", ""),
+        "rag": "", "delta": None, "since": None,
+    }
+    gov = overlay[-1] if overlay else None
+    start = next((v for d, v in data if gov and d >= gov["date"]), None)
+    if gov and start is not None:
+        delta = latest - start
+        kpi.update(delta=round(delta, 4), delta_text=_fmt(graph, round(delta, 4), signed=True)
+                   if graph.get("format") else f"{delta:+.2f}",
+                   rag=rag_for(delta), since=gov["value"], since_date=gov["date"])
+    return kpi
+
+
 def _table_data(ind: Indicator) -> tuple[list[str], list[list]]:
     """
     (headers, rows) for the data table, most recent first.
@@ -191,10 +247,29 @@ def _table_data(ind: Indicator) -> tuple[list[str], list[list]]:
                             rag = "good" if delta < 0 else "bad"
                         elif direction == "higher_is_better":
                             rag = "good" if delta > 0 else "bad"
-            display_cells.append({"value": v if v is not None else "", "rag": rag})
+            display_cells.append({"value": _fmt(cg[col_i], v) if v is not None else "", "rag": rag})
         rows.append(display_cells)
 
     return headers, rows
+
+
+def _flags() -> dict[str, str]:
+    """{jurisdiction name: flag path relative to the site root}, for flags that exist."""
+    meta = yaml.safe_load(Path(JURISDICTIONS_FILE).read_text(encoding="utf-8")) or {}
+    flags = {}
+    for name, info in meta.items():
+        path = f"static/flags/{info['iso']}.svg"
+        if Path(path).exists():
+            flags[name] = path
+    return flags
+
+
+def _last_run() -> str:
+    """'YYYY-MM-DD HH:MM UTC' from lastrun.txt (written by the update workflow), or ''."""
+    path = Path(LASTRUN_FILE)
+    if not path.exists():
+        return ""
+    return datetime.fromisoformat(path.read_text().strip().replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M UTC")
 
 
 # ── Jinja2 ────────────────────────────────────────────────────────────────────
@@ -204,6 +279,7 @@ def _env() -> jinja2.Environment:
         loader=jinja2.FileSystemLoader(TEMPLATE_DIR),
         autoescape=jinja2.select_autoescape(["html"]),
     )
+    env.globals["last_run"] = _last_run()
     env.filters["tojson"] = lambda v: json.dumps(v, default=str)
     return env
 
@@ -221,6 +297,9 @@ def main() -> None:
     env = _env()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     cutoff = _cutoff()
+    flags = _flags()
+    if Path(STATIC_DIR).is_dir():
+        shutil.copytree(STATIC_DIR, f"{OUTPUT_DIR}/{STATIC_DIR}", dirs_exist_ok=True)
 
     all_indicators: list[Indicator] = [
         Indicator(p) for p in sorted(Path("data").glob("*.yaml"))
@@ -236,7 +315,31 @@ def main() -> None:
     # ── Home page ─────────────────────────────────────────────────────────────
     _render(env, "index.jinja", f"{OUTPUT_DIR}/index.html",
             jurisdictions=sorted(by_jurisdiction.keys()),
+            flags=flags,
             page_id="index")
+
+    # ── Status page ───────────────────────────────────────────────────────────
+    status_rows = []
+    for ind in sorted(all_indicators, key=lambda i: (i.jurisdiction, i.title)):
+        graphs = ind.graphs
+        latest = max(graphs[0].get("data", {}).items(), default=None) if graphs else None
+        if latest is None:
+            value = ""
+        elif ind.is_overlay:
+            value = latest[1]["value"]
+        else:
+            value = _fmt(graphs[0], latest[1])
+        slug = ind.jurisdiction.lower().replace(" ", "_")
+        status_rows.append({
+            "jurisdiction": ind.jurisdiction,
+            "title":        ind.title,
+            "url":          None if ind.is_overlay else f"{slug}_{ind.id}.html",
+            "value":        value,
+            "last_updated": ind.last_updated,
+            "freshness":    freshness(ind.last_updated, ind.frequency),
+            "sourcing":     "Auto" if ind.collector else "Manual",
+        })
+    _render(env, "status.jinja", f"{OUTPUT_DIR}/status.html", rows=status_rows, page_id="status")
 
     # ── Per-jurisdiction pages ────────────────────────────────────────────────
     for jurisdiction, inds in sorted(by_jurisdiction.items()):
@@ -253,19 +356,26 @@ def main() -> None:
             latest_date = sorted_data[-1][0] if sorted_data else None
             latest_val  = sorted_data[-1][1] if sorted_data else None
 
+            overlay_id = cg[0].get("overlay_metric")
+            kpi = _kpi(cg[0], _overlay_all(by_id[overlay_id]) if overlay_id in by_id else [])
+
             by_cat[ind.category].append({
                 "id":           ind.id,
                 "title":        ind.title,
                 "url":          f"{slug}_{ind.id}.html",
                 "sparkline":    _sparkline(values),
-                "rag":          _rag(values, direction),
-                "latest_value": latest_val,
+                "rag":          kpi["rag"] if kpi and kpi["delta"] is not None else _rag(values, direction),
+                "delta":        kpi["delta"] if kpi else None,
+                "delta_text":   kpi["delta_text"] if kpi and kpi["delta"] is not None else "",
+                "latest_value": _fmt(cg[0], latest_val),
                 "latest_date":  latest_date,
+                "freshness":    freshness(ind.last_updated, ind.frequency),
                 "y_label":      cg[0].get("y", ""),
             })
 
         _render(env, "jurisdiction.jinja", f"{OUTPUT_DIR}/{slug}.html",
                 jurisdiction=jurisdiction,
+                flag=flags.get(jurisdiction),
                 slug=slug,
                 categories=dict(sorted(by_cat.items())),
                 page_id="jurisdiction")
@@ -300,14 +410,20 @@ def main() -> None:
                     "gov_perf":    gov_perf,
                 })
 
+            first_overlay = cg[0].get("overlay_metric")
+            kpi = _kpi(cg[0], _overlay_all(by_id[first_overlay])
+                       if first_overlay in by_id else [])
             table_headers, table_rows = _table_data(ind)
 
             _render(env, "indicator.jinja",
                     f"{OUTPUT_DIR}/{slug}_{ind.id}.html",
                     jurisdiction=jurisdiction,
+                    flag=flags.get(jurisdiction),
                     slug=slug,
                     ind=ind,
                     graphs=graphs,
+                    kpi=kpi,
+                    freshness=freshness(ind.last_updated, ind.frequency),
                     overlays=overlays,
                     table_headers=table_headers,
                     table_rows=table_rows,

@@ -16,8 +16,9 @@
     .topbar .nav-link { color: rgba(255,255,255,.75); }
     .topbar .nav-link:hover, .topbar .nav-link.active { color: #fff; }
     .card { border: none; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-    .section-title { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-                     color: #6b7280; padding: .5rem 0 .25rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 0; }
+    .section-title { font-size: .9rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+                     color: var(--navy); background: #cbd5e1; border-bottom: 1px solid #b6c2d2;
+                     border-radius: 10px 10px 0 0; margin-bottom: 0; }
     .metric-row { display: flex; align-items: center; gap: 1rem; padding: .55rem .75rem;
                   border-bottom: 1px solid #f3f4f6; text-decoration: none; color: inherit; }
     .metric-row:hover { background: #f0f4ff; }
@@ -54,8 +55,8 @@
 
 <footer>
   <div class="container d-flex justify-content-between">
-    <span>Political Data — open-source accountability</span>
-    <a href="https://github.com/massyn/political-data">GitHub</a>
+    <span>Political Data — open-source accountability{% if last_run %} &middot; Last run {{ last_run }}{% endif %}</span>
+    <span><a href="status.html" class="me-3">Status</a><a href="https://github.com/massyn/political-data">GitHub</a></span>
   </div>
 </footer>
 

@@ -1,0 +1,8 @@
+# Per-jurisdiction metadata, keyed by the `jurisdiction:` value used in data/*.yaml.
+#
+# iso: ISO 3166-1 alpha-2 code (lower case). The flag is static/flags/<iso>.svg,
+#      vendored from https://flagcdn.com. To add a flag for a new jurisdiction:
+#        curl -fL https://flagcdn.com/<iso>.svg -o static/flags/<iso>.svg
+#      then add the entry below. (flagcdn also serves subnational flags, e.g. us-ca.)
+Australia:
+  iso: au

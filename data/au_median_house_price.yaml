@@ -16,6 +16,7 @@ description: 'Tracks the mean dwelling price across Australia''s eight capital c
 graph:
 - x: date
   y: Mean dwelling price (AUD)
+  format: '${:,.0f}'
   title: Median House Price (AUD)
   overlay_metric: au_prime_minister
   direction: lower_is_better
