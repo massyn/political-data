@@ -24,6 +24,12 @@
   .event-legend { font-size: .78rem; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
   .event-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .35rem; opacity: .6; }
   .cell-bad    { color: #b91c1c; font-weight: 600; }
+  .data-table td:first-child { white-space: nowrap; }
+  @media (max-width: 575.98px) {
+    .chart-wrap { height: 260px; }
+    .kpi-card   { min-width: 0; width: 100%; }
+    .kpi-value  { font-size: 2rem; }
+  }
 </style>
 {% endblock %}
 
@@ -52,7 +58,7 @@
 </div>
 
 <div class="d-flex flex-wrap gap-4 align-items-start mb-4">
-  <div class="flex-grow-1" style="flex-basis:360px;">
+  <div class="flex-grow-1" style="flex-basis:min(360px, 100%);">
     {% if ind._data.description %}
     <p class="text-muted mb-0" style="font-size:.9rem; max-width:680px;">{{ ind._data.description }}</p>
     {% endif %}
@@ -109,7 +115,7 @@
 {% if table_rows %}
 <div class="card p-3">
   <div class="fw-semibold mb-2">Data</div>
-  <div style="max-height:360px; overflow-y:auto;">
+  <div style="max-height:360px; overflow:auto;">
     <table class="table table-sm table-hover data-table mb-0">
       <thead class="sticky-top bg-white">
         <tr>
