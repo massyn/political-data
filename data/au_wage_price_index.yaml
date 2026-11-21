@@ -15,6 +15,7 @@ description: 'Tracks the Wage Price Index (WPI) for Australia, measuring changes
 graph:
 - x: date
   y: Annual wage growth (%)
+  format: '{:.1f}%'
   title: Annual Wage Growth (%)
   overlay_metric: au_prime_minister
   direction: higher_is_better
@@ -87,6 +88,7 @@ graph:
     2026-09-30: 3.5
 - x: date
   y: Wage Price Index (2008-09 = 100)
+  format: '{:.1f}'
   title: Wage Price Index
   overlay_metric: au_prime_minister
   data:

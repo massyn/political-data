@@ -14,6 +14,7 @@ description: 'Tracks Australia''s Gross Domestic Product (GDP) growth rate, meas
 graph:
 - x: date
   y: GDP growth rate QoQ (%)
+  format: '{:.1f}%'
   title: GDP Growth (% quarterly)
   overlay_metric: au_prime_minister
   direction: higher_is_better

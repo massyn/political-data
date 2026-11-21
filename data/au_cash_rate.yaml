@@ -14,6 +14,7 @@ description: 'Tracks the Reserve Bank of Australia''s official cash rate target 
 graph:
 - x: date
   y: Cash rate target (% per annum)
+  format: '{:.2f}%'
   title: Cash Rate
   overlay_metric: au_prime_minister
   direction: lower_is_better

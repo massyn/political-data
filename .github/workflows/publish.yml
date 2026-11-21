@@ -3,6 +3,14 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,18 +18,23 @@ jobs:
       - name: Check me out
         uses: actions/checkout@v7
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
 
-      - name: Generate report
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate site
         run: python build.py
-      
+
       - name: Publish to Cloudflare
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.166.0"
           command: pages deploy ./dist --project-name=political-data
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-  

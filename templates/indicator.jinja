@@ -10,6 +10,16 @@
   .data-table th { font-size: .8rem; font-weight: 600; color: #6b7280; white-space: nowrap; }
   .data-table td { font-size: .85rem; font-variant-numeric: tabular-nums; }
   .cell-good   { color: #15803d; font-weight: 600; }
+  .kpi-card    { min-width: 220px; text-align: center; border-width: 2px; }
+  .kpi-good    { border-color: #15803d; background: #f0fdf4; color: #15803d; }
+  .kpi-bad     { border-color: #b91c1c; background: #fef2f2; color: #b91c1c; }
+  .kpi-value   { font-size: 2.4rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi-meta    { font-size: .8rem; color: #6b7280; }
+  .kpi-delta   { font-size: .8rem; margin-top: .5rem; }
+  .fresh-pill  { font-weight: 600; }
+  .fresh-pill.fresh-current     { background: #dcfce7; color: #15803d; }
+  .fresh-pill.fresh-stale       { background: #fef3c7; color: #b45309; }
+  .fresh-pill.fresh-out_of_date { background: #fee2e2; color: #b91c1c; }
   .cell-bad    { color: #b91c1c; font-weight: 600; }
 </style>
 {% endblock %}
@@ -23,17 +33,40 @@
   </ol>
 </nav>
 
-<h1 class="fw-bold mb-2" style="font-size:1.6rem;">{{ ind.title }}</h1>
+<h1 class="fw-bold mb-2 d-flex align-items-center gap-3" style="font-size:1.6rem;">
+  {% if flag %}<img src="{{ flag }}" alt="{{ jurisdiction }}" class="border" style="height:30px; border-radius:4px;">{% endif %}
+  {{ ind.title }}
+</h1>
 
 <div class="mb-3">
   <span class="meta-pill">{{ ind.category }}</span>
   <span class="meta-pill">{{ ind.frequency }}</span>
+  <span class="meta-pill fresh-pill fresh-{{ freshness.status }}"
+        title="{% if freshness.due %}Next data {% if freshness.overdue_days %}was due{% else %}due{% endif %} {{ freshness.due }}{% endif %}">
+    {{ freshness.label }}{% if freshness.overdue_days %} &middot; {{ freshness.overdue_days }} days overdue{% endif %}
+  </span>
   <a class="meta-pill text-decoration-none" href="{{ ind._data.source }}" target="_blank" rel="noopener">Source &#8599;</a>
 </div>
 
-{% if ind._data.description %}
-<p class="text-muted mb-4" style="font-size:.9rem; max-width:680px;">{{ ind._data.description }}</p>
-{% endif %}
+<div class="d-flex flex-wrap gap-4 align-items-start mb-4">
+  <div class="flex-grow-1" style="flex-basis:360px;">
+    {% if ind._data.description %}
+    <p class="text-muted mb-0" style="font-size:.9rem; max-width:680px;">{{ ind._data.description }}</p>
+    {% endif %}
+  </div>
+  {% if kpi %}
+  <div class="card kpi-card p-3 {% if kpi.rag %}kpi-{{ kpi.rag }}{% endif %}">
+    <div class="kpi-value">{{ kpi.value }}</div>
+    <div class="kpi-meta">{{ kpi.label }} &middot; {{ kpi.date }}</div>
+    {% if kpi.delta is not none %}
+    <div class="kpi-delta">
+      {% if kpi.delta > 0 %}&#9650;{% elif kpi.delta < 0 %}&#9660;{% else %}&#9654;{% endif %}
+      {{ kpi.delta_text }} since {{ kpi.since }} took office ({{ kpi.since_date }})
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
 
 {% for graph in graphs %}
 

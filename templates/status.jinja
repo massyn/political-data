@@ -1,0 +1,43 @@
+{% extends "base.jinja" %}
+{% block title %}Status — Political Data{% endblock %}
+
+{% block extra_css %}
+<style>
+  .status-table th { font-size: .8rem; font-weight: 600; color: #6b7280; white-space: nowrap; }
+  .status-table td { font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .fresh-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: .4rem; }
+  .fresh-current     { background: #16a34a; }
+  .fresh-stale       { background: #f59e0b; }
+  .fresh-out_of_date { background: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="fw-bold mb-3" style="font-size:1.5rem;">Status</h1>
+
+<div class="card p-3">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover status-table mb-0">
+      <thead>
+        <tr>
+          <th>Jurisdiction</th><th>Metric</th><th>Value</th><th>Last updated</th><th>Freshness</th><th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.jurisdiction }}</td>
+          <td>{% if r.url %}<a href="{{ r.url }}">{{ r.title }}</a>{% else %}{{ r.title }}{% endif %}</td>
+          <td>{{ r.value }}</td>
+          <td>{{ r.last_updated }}</td>
+          <td title="{% if r.freshness.due %}Next data due {{ r.freshness.due }}{% endif %}">
+            <span class="fresh-dot fresh-{{ r.freshness.status }}"></span>{{ r.freshness.label }}
+          </td>
+          <td>{{ r.sourcing }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -6,11 +6,15 @@ Usage:
     python update.py --dry-run       # preview changes, no writes
     python update.py --force         # update all regardless of staleness
     python update.py cpi             # target a specific indicator by id substring
+
+When run under GitHub Actions ($GITHUB_OUTPUT is set) it also writes
+`updated=<number of indicators that gained new rows>` for later workflow steps.
 """
 
 from __future__ import annotations
 
 import importlib.util
+import os
 import re
 import sys
 from datetime import date, timedelta
@@ -350,6 +354,13 @@ def main() -> None:
         print(f"\nMissing periods - fill by hand ({len(missing)}):")
         for m in missing:
             print(f"  ? {m}")
+
+    # Tell GitHub Actions whether anything new was downloaded, so the workflow
+    # only rebuilds and publishes when it has to.
+    output_file = os.environ.get("GITHUB_OUTPUT")
+    if output_file and not dry_run:
+        with open(output_file, "a", encoding="utf-8") as fh:
+            fh.write(f"updated={len(updated)}\n")
 
     if not updated and not manual and not errors and not missing:
         print(f"All {len(current)} indicator(s) are current.")
